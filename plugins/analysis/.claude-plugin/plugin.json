@@ -1,7 +1,7 @@
 {
   "name": "analysis",
-  "version": "0.1.0",
-  "description": "Codebase analysis and architecture analysis skills for deep understanding of software systems",
+  "version": "0.2.0",
+  "description": "Codebase analysis with web-based documentation — analyze architectures, generate docs, and serve them as a searchable site",
   "author": {
     "name": "platootalp"
   },
