@@ -1,0 +1,23 @@
+{
+  "skill_name": "source-functional-analysis",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我分析 Claude Code Hook 系统的功能点。源码在 /Users/lijunyi/road/harness-code/claude-code/src/utils/hooks/ 目录，类型定义在 src/types/hooks.ts，配置 schema 在 src/schemas/hooks.ts。我需要知道 Hook 系统提供了哪些能力，按模块分组输出到 docs/claude-code-hooks-functional-analysis.md",
+      "expected_output": "一份结构化文档，包含 Hook 系统的功能总览表（按模块分组）和每个功能点的触发条件、执行路径、输出结果描述，写入 docs/ 目录",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "梳理 Claude Code 权限系统（Permission System）的功能点。核心实现在 /Users/lijunyi/road/harness-code/claude-code/src/utils/permissions.ts 和 src/types/permissions.ts，沙箱在 src/utils/sandbox/。只关注权限判断和沙箱隔离，不要包含 Hook 相关的功能。输出到 docs/claude-code-permissions-functional-analysis.md",
+      "expected_output": "权限系统的功能点编目文档，按模块分组（权限规则、权限模式、沙箱隔离等），有明确的功能点编号和源码证据，排除了 Hook 相关内容",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "识别 Claude Code 插件系统（src/utils/plugins/）的功能点，这个系统管理插件的加载、校验、安装、卸载和市场。分析范围限定在 /Users/lijunyi/road/harness-code/claude-code/src/utils/plugins/ 目录下的文件。输出到 docs/claude-code-plugins-functional-analysis.md",
+      "expected_output": "插件系统的功能点清单，包含加载、校验、安装、卸载、市场管理等模块，每个功能点有调用链追踪和源码证据",
+      "files": []
+    }
+  ]
+}
