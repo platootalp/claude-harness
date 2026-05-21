@@ -1,6 +1,9 @@
 # build output
 dist/
 
+# generated search index
+public/search-index.json
+
 # generated types
 .astro/
 
