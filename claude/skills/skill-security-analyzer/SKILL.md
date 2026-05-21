@@ -35,7 +35,7 @@ python3 scripts/security_scanner.py /path/to/skill
 python3 scripts/security_scanner.py /path/to/skill --verbose
 
 # Scan all installed skills
-python3 scripts/security_scanner.py ~/.claude/skills/ --recursive
+python3 scripts/security_scanner.py ~/claude/skills/ --recursive
 
 # Output to JSON
 python3 scripts/security_scanner.py /path/to/skill --output report.json

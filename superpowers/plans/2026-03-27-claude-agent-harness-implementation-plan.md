@@ -787,7 +787,7 @@ See .claude/rules/ directory for workflow rules.
 - [ ] **Step 1: Verify all files created**
 
 ```bash
-find .claude -type f | sort
+find claude -type f | sort
 ```
 
 Expected output should include:

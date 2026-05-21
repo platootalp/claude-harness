@@ -125,10 +125,10 @@ git clone <github-url> /tmp/skill-analysis/<skill-name>
 
 For marketplace links:
 ```bash
-# Marketplace skills are in ~/.claude/plugins/marketplaces/*/
-# or ~/.claude/skills/ for user skills
-ls -la ~/.claude/skills/
-ls -la ~/.claude/plugins/marketplaces/*/
+# Marketplace skills are in ~/claude/plugins/marketplaces/*/
+# or ~/claude/skills/ for user skills
+ls -la ~/claude/skills/
+ls -la ~/claude/plugins/marketplaces/*/
 ```
 
 For ZIP files:

@@ -1,5 +1,5 @@
 ---
-name: codebase-to-docs
+name: codebase-to-template
 description: 以内容优先、证据支撑的方式，从现有代码库生成详细的架构解析、工作流解析与参考文档体系。
 ---
 

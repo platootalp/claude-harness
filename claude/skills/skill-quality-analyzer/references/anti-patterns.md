@@ -562,7 +562,7 @@ Arguments:
     --output: Optional JSON output file
 
 Example:
-    python analyzer.py ~/.claude/skills/my-skill --output analysis.json
+    python analyzer.py ~/claude/skills/my-skill --output analysis.json
 """
 import argparse
 import sys
