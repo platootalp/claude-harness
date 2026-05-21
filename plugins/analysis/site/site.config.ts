@@ -1,7 +1,7 @@
 export default {
-  name: "__SITE_NAME__",
-  description: "__SITE_DESC__",
-  url: "__SITE_URL__",
+  name: "Analysis Plugin Docs",
+  description: "Generated documentation from codebase analysis",
+  url: "http://localhost:4321",
 
   nav: [
     { label: "Docs", href: "/docs" },
@@ -10,11 +10,6 @@ export default {
 
   sidebar: {
     auto: true,
-    groups: [
-      { title: "Getting Started", dir: "getting-started" },
-      { title: "Guide", dir: "guide" },
-      { title: "Reference", dir: "reference" },
-    ],
   },
 
   features: {
@@ -27,4 +22,4 @@ export default {
   },
 } as const;
 
-export type SiteConfig = typeof import('../../site.config').default;
+export type SiteConfig = typeof import('./site.config').default;
