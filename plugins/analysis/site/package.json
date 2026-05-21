@@ -1,7 +1,8 @@
 {
-  "name": "__SITE_NAME__",
+  "name": "analysis-plugin-docs",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "private": true,
   "engines": {
     "node": ">=22.12.0"
   },
@@ -10,6 +11,7 @@
     "build": "node scripts/build-search-index.mjs && astro build",
     "build:index": "node scripts/build-search-index.mjs",
     "preview": "astro preview",
+    "setup": "test -e docs || ln -s ../docs docs",
     "astro": "astro"
   },
   "dependencies": {
