@@ -60,6 +60,8 @@ plugins/analysis/
 
 Skills write markdown to `plugins/analysis/docs/`. Astro reads from `site/docs/` which is a symlink to `../docs`. Zero duplication, no copy step. On Windows, a junction point serves the same purpose.
 
+Astro's glob loader (`content.config.ts`) resolves symlinks by default, so `../docs/*.md` works whether `site/docs/` is a symlink or a real directory. The glob pattern targets `docs/**/*.md` relative to the content config, which follows the symlink transparently.
+
 ### docs/ is gitignored
 
 Generated content is not source. Skills regenerate it on demand. The `.gitignore` in `plugins/analysis/` excludes `docs/` and `site/docs/`.
