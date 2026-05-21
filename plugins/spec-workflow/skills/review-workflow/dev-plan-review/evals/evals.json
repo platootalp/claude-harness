@@ -1,0 +1,25 @@
+{
+  "skill_name": "dev-plan-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "请以技术实现计划评审 docs/superpowers/plans/2026-05-08-self-evolution-v4.md，重点判断可执行性、安全性和可验证性，不要写成文档摘要。",
+      "expected_output": "发现项优先的评审，覆盖 hook 顺序、状态生命周期、安全白名单/内容扫描、失败处理、测试、可运维性及具体开放问题。",
+      "files": [
+        "docs/superpowers/plans/2026-05-08-self-evolution-v4.md"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "我有一份迁移计划：回填生产表、切换写路径、并在同一发布里删掉旧列。请在工程师动手前评审这份计划。",
+      "expected_output": "评审应点出发布与回滚风险、兼容窗口、幂等回填要求、数据校验、监控与分阶段部署等关切。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "请评审这个 agent 自动化设计：后台 hook 监听对话，让子 agent 生成配置文件，在置信度高时写入用户主目录。",
+      "expected_output": "评审应优先信任边界、写权限、prompt 注入、密钥泄露、路径约束、用户同意、状态清理、可观测性与红队测试。",
+      "files": []
+    }
+  ]
+}
