@@ -62,6 +62,12 @@ description: 以内容优先、证据支撑的方式，从现有代码库生成�
 - 范围：完整详细解析
 - 深度：L2
 
+## 输出路径
+
+When this skill is invoked via the analysis plugin's agents or commands, output goes to `plugins/analysis/docs/` relative to the project root. The page tree in the "页面树规划" section should be interpreted as subdirectories under this path.
+
+When invoked standalone (not via the plugin), output goes to `docs/` relative to the current working directory.
+
 ## 输出模式与主轴
 
 ### 默认输出模式：详细解析型
