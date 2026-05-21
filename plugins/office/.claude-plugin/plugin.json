@@ -1,6 +1,6 @@
 {
   "name": "office",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Office document handling: xlsx, HTML publishing, and file upload",
   "author": {
     "name": "platootalp"
