@@ -1,0 +1,8 @@
+# Generated documentation content
+docs/
+
+# Site build artifacts
+site/docs/
+site/node_modules/
+site/dist/
+site/.astro/
