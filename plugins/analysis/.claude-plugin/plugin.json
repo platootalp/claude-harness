@@ -1,0 +1,9 @@
+{
+  "name": "analysis",
+  "version": "1.0.0",
+  "description": "Codebase analysis and architecture analysis skills for deep understanding of software systems",
+  "author": {
+    "name": "platootalp"
+  },
+  "license": "MIT"
+}

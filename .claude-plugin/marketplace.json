@@ -1,0 +1,39 @@
+{
+  "name": "harness-marketplace",
+  "description": "Spec-driven development plugin marketplace for Claude Code",
+  "owner": {
+    "name": "platootalp"
+  },
+  "plugins": [
+    {
+      "name": "spec-workflow",
+      "source": "./plugins/spec-workflow",
+      "description": "Spec-driven development workflow: agents, rules, hooks, commands, and review skills"
+    },
+    {
+      "name": "analysis",
+      "source": "./plugins/analysis",
+      "description": "Codebase analysis and architecture analysis skills"
+    },
+    {
+      "name": "coding",
+      "source": "./plugins/coding",
+      "description": "Coding, testing, and skill-building skills"
+    },
+    {
+      "name": "office",
+      "source": "./plugins/office",
+      "description": "Office document handling skills"
+    },
+    {
+      "name": "interview",
+      "source": "./plugins/interview",
+      "description": "Technical interview preparation skills"
+    },
+    {
+      "name": "reference",
+      "source": "./plugins/reference",
+      "description": "AI coding tool reference documentation skills"
+    }
+  ]
+}

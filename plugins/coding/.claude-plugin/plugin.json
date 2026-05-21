@@ -1,0 +1,9 @@
+{
+  "name": "coding",
+  "version": "1.0.0",
+  "description": "Coding, testing, API design, and skill-building skills for software development",
+  "author": {
+    "name": "platootalp"
+  },
+  "license": "MIT"
+}

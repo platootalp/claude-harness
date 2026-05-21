@@ -1,0 +1,9 @@
+{
+  "name": "interview",
+  "version": "1.0.0",
+  "description": "Technical interview preparation and project resume skills",
+  "author": {
+    "name": "platootalp"
+  },
+  "license": "MIT"
+}

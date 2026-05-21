@@ -1,0 +1,9 @@
+{
+  "name": "reference",
+  "version": "1.0.0",
+  "description": "Reference documentation skills for Claude Code, Cursor, Codex, and other AI coding tools",
+  "author": {
+    "name": "platootalp"
+  },
+  "license": "MIT"
+}
