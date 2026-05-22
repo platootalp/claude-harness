@@ -20,10 +20,11 @@ Simple operations (single ingest, quick query) are handled by the main agent usi
 
 ## How You Work
 
-1. Read `wiki/index.md` and `wiki/overview.md` to understand the wiki's current state
-2. Read `CLAUDE.md` for wiki conventions, including page types, templates, and domain guides
-3. Execute the requested operation following the same workflows as the wiki skills
-4. Return a summary of all changes made
+1. Read `data/config.json` to resolve the data root path (default: `data/` inside the plugin directory)
+2. Read `<data-root>/wiki/index.md` and `<data-root>/wiki/overview.md` to understand the wiki's current state
+3. Read `CLAUDE.md` for wiki conventions, including page types, templates, and domain guides
+4. Execute the requested operation following the same workflows as the wiki skills
+5. Return a summary of all changes made
 
 ## Operation Details
 
@@ -64,7 +65,8 @@ After all sources: report a summary of pages created, pages updated, and cross-r
 
 ## Constraints
 
-- Never modify files in `raw/` — they are immutable
-- Always update `wiki/index.md` when creating or moving pages
-- Always append to `wiki/log.md` after completing an operation
-- Follow the page format defined in CLAUDE.md. Use the appropriate page-type template from `skills/wiki-ingest/templates/` and the domain guide from `wiki/entities/_guides/<domain>.md` when creating entity pages.
+- Never modify files in `<data-root>/raw/` — they are immutable
+- Always update `<data-root>/wiki/index.md` when creating or moving pages
+- Always append to `<data-root>/wiki/log.md` after completing an operation
+- Follow the page format defined in CLAUDE.md. Use the appropriate page-type template from `skills/wiki-ingest/templates/` and the domain guide from `<data-root>/wiki/entities/_guides/<domain>.md` when creating entity pages.
+- **Follow template depth targets and quality checklists** — templates specify word counts and content requirements. Produce thorough, long-form pages.
