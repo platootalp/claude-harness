@@ -7,10 +7,18 @@ description: Answer questions from wiki content. Use when the user asks about a 
 
 Answer questions from the wiki by reading relevant pages and synthesizing an answer.
 
+## Path Resolution
+
+All paths resolve through `data/config.json`. Read this file first to determine the data root:
+- `dataDir: "."` (default) → data root is `data/` inside the plugin directory
+- `dataDir: "/absolute/path"` → data root is the specified absolute path
+
+All `wiki/` and `raw/` references below are relative to the resolved data root.
+
 ## Workflow
 
 1. **Read the index**
-   - Read `wiki/index.md` to find pages relevant to the question
+   - Read `<data-root>/wiki/index.md` to find pages relevant to the question
    - Match the question topic against page titles and summaries in the index
 
 2. **Read relevant wiki pages**
@@ -29,7 +37,7 @@ Answer questions from the wiki by reading relevant pages and synthesizing an ans
    - Answers can take different forms depending on the question: markdown page, comparison table, slide deck (Marp), chart (matplotlib), canvas
 
 5. **File substantial answers as new wiki pages**
-   - If the answer required synthesizing multiple pages into a new insight (comparison, analysis, connection), create a new wiki page for it in `wiki/syntheses/` following `templates/page-synthesis.md`
+   - If the answer required synthesizing multiple pages into a new insight (comparison, analysis, connection), create a new wiki page for it in `<data-root>/wiki/syntheses/` following `templates/page-synthesis.md`
    - Set `synthesis_type` based on the answer: `comparison` for side-by-side analysis, `analysis` for deep dives, `connection` for newly discovered relationships
    - This is how the wiki compounds — explorations become permanent knowledge, not lost in chat history
    - Only file substantial answers, not simple lookups
@@ -39,14 +47,14 @@ Answer questions from the wiki by reading relevant pages and synthesizing an ans
 
 The index is organized by page type (Sources, Entities, Concepts, Syntheses). When a question comes in:
 
-- Check `wiki/index.md` for matching pages across all type sections
+- Check `<data-root>/wiki/index.md` for matching pages across all type sections
 - Start with Entities section for questions about specific things
 - Start with Concepts section for questions about ideas and patterns
 - Check Syntheses for existing comparisons or analyses
 
 ## Path Resolution
 
-All wiki paths are relative to the wiki plugin root (`plugins/wiki/`). When the skill references `wiki/index.md`, the full path is `plugins/wiki/wiki/index.md`. When a wiki page references a raw source like `raw/ai-tools/claude-code.md`, the full path is `plugins/wiki/raw/ai-tools/claude-code.md`.
+All wiki paths resolve through `data/config.json`. The data root defaults to `data/` inside the plugin directory. When the skill references `wiki/index.md`, the full path is `<data-root>/wiki/index.md`. When a wiki page references a raw source like `raw/ai-tools/claude-code.md`, the full path is `<data-root>/raw/ai-tools/claude-code.md`.
 
 ## Guidelines
 
