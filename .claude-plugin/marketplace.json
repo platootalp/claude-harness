@@ -31,9 +31,9 @@
       "description": "Technical interview preparation skills"
     },
     {
-      "name": "reference",
-      "source": "./plugins/reference",
-      "description": "AI coding tool reference documentation skills"
+      "name": "wiki",
+      "source": "./plugins/wiki",
+      "description": "LLM-maintained personal knowledge base — ingest sources, query the wiki, lint for consistency"
     }
   ]
 }
