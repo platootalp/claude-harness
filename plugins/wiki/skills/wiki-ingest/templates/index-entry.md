@@ -1,1 +1,1 @@
-- [<Page Title>](<type-dir>/<page-name>.md) — <one-line summary>
+- [{Page Title}]({type-dir}/{page-name}.md) — {one-line summary}

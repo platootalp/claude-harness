@@ -1,15 +1,15 @@
 ---
-tags: [<tag1>, <tag2>]
+tags: [{tag1}, {tag2}]
 date: YYYY-MM-DD
-source_url: <URL or "local">
+source_url: {URL or "local"}
 media: web | doc-index | file | pasted | transcript | notes
-domain: <domain identifier for routing>
+domain: {domain identifier}
 status: unprocessed | processed
 ---
 
-# <Source Title>
+# {Source Title}
 
-<Raw source content follows. This file is immutable after creation.>
+Raw source content follows. This file is immutable after creation.
 
 <!-- Field guidance:
 - tags: use kebab-case, include the domain as a tag (e.g., [ai-tools, cli, coding])

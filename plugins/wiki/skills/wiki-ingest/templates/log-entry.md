@@ -1,3 +1,3 @@
-## [YYYY-MM-DD] <operation> | <Title>
+## [YYYY-MM-DD] {operation} | {Title}
 
-<What was done. Which pages were created/updated. Which cross-references were added.>
+{What was done. Which pages were created/updated. Which cross-references were added.}
