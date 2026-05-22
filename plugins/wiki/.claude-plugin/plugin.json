@@ -1,0 +1,7 @@
+{
+  "name": "wiki",
+  "version": "0.1.0",
+  "description": "LLM-maintained personal knowledge base — ingest sources, query the wiki, lint for consistency",
+  "author": { "name": "platootalp" },
+  "license": "MIT"
+}
