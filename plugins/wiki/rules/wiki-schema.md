@@ -36,9 +36,9 @@ status: draft | stable | needs-update
 
 One-paragraph synthesis of the topic.
 
-## Details
+## Key Areas
 
-Full content with sections, cross-references, and citations.
+Subsections covering the main topics. Use `###` for each area.
 
 ## See Also
 
