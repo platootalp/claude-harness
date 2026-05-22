@@ -7,10 +7,18 @@ description: Health-check the wiki for consistency and completeness. Use when th
 
 Health-check the wiki for consistency, completeness, and quality.
 
+## Path Resolution
+
+All paths resolve through `data/config.json`. Read this file first to determine the data root:
+- `dataDir: "."` (default) → data root is `data/` inside the plugin directory
+- `dataDir: "/absolute/path"` → data root is the specified absolute path
+
+All `wiki/` and `raw/` references below are relative to the resolved data root.
+
 ## Workflow
 
 1. **Scan all wiki pages**
-   - Read every page in `wiki/sources/`, `wiki/entities/`, `wiki/concepts/`, and `wiki/syntheses/` (plus `wiki/overview.md`)
+   - Read every page in `<data-root>/wiki/sources/`, `<data-root>/wiki/entities/`, `<data-root>/wiki/concepts/`, and `<data-root>/wiki/syntheses/` (plus `<data-root>/wiki/overview.md`)
    - Build a mental model of the wiki's current state
 
 2. **Check for issues**
@@ -22,7 +30,7 @@ Health-check the wiki for consistency, completeness, and quality.
    - **Data gaps**: Are there topics where the wiki coverage is thin and could benefit from a new source?
 
 3. **Check index completeness**
-   - Compare `wiki/index.md` entries against actual files in the type directories
+   - Compare `<data-root>/wiki/index.md` entries against actual files in the type directories
    - Verify entries exist in the correct type section (Sources, Entities, Concepts, Syntheses)
    - Flag any pages missing from the index
    - Flag any index entries pointing to non-existent pages
@@ -36,11 +44,10 @@ Health-check the wiki for consistency, completeness, and quality.
 5. **Apply approved fixes**
    - Fix contradictions by updating the less authoritative page
    - Add missing cross-references
-   - Update the index to match actual pages
+   - Update the index to match actual pages (`<data-root>/wiki/index.md`)
    - Set `status: needs-update` on pages that need fresh sources
-   - Append a lint entry to `wiki/log.md`
-   - When creating or updating pages, follow the appropriate page-type template in `templates/`
-   - For entity/concept pages, also read the relevant domain guide at `wiki/entities/_guides/<domain>.md`
+   - Append a lint entry to `<data-root>/wiki/log.md`
+   - When creating or updating pages, follow the appropriate page-type template in `templates/`. For entity/concept pages, also read the relevant domain guide at `<data-root>/wiki/entities/_guides/<domain>.md`
 
 ## Guidelines
 
