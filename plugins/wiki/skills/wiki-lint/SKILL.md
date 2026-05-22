@@ -1,6 +1,6 @@
 ---
-name: wiki-lint
-description: Health-check the wiki for consistency and completeness. Use when the user says "lint the wiki", "health check", "what's missing", "check the wiki", or periodically after multiple ingests. Scans for contradictions, stale claims, orphan pages, missing cross-references, and gaps.
+name: llm-wiki-lint
+description: Health-check the llm-wiki for consistency and completeness. Use when the user says "lint the llm-wiki", "health check", "what's missing", "check the llm-wiki", or periodically after multiple ingests. Scans for contradictions, stale claims, orphan pages, missing cross-references, and gaps.
 ---
 
 # Wiki Lint

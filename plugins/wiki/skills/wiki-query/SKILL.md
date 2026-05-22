@@ -1,6 +1,6 @@
 ---
-name: wiki-query
-description: Answer questions from wiki content. Use when the user asks about a topic that might be covered in the wiki, says "look up X in the wiki", "what does the wiki say about Y", or asks about AI coding tools, features, configuration, or any topic the wiki covers. Routes to the right wiki pages via the index, reads them, and synthesizes an answer.
+name: llm-wiki-query
+description: Answer questions from llm-wiki content. Use when the user asks about a topic that might be covered in the llm-wiki, says "look up X in the llm-wiki", "what does the llm-wiki say about Y", or asks about AI coding tools, features, configuration, or any topic the llm-wiki covers. Routes to the right llm-wiki pages via the index, reads them, and synthesizes an answer.
 ---
 
 # Wiki Query
