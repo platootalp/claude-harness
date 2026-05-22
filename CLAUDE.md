@@ -1,86 +1,91 @@
-# Harness Marketplace
+# CLAUDE.md
 
-## Overview
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-A Claude Code plugin marketplace providing spec-driven development workflow tools. Install only the plugins you need.
+## What This Repo Is
 
-## Plugins
+A Claude Code plugin marketplace (`harness-marketplace`) that distributes spec-driven development workflow tools. Users add the marketplace and install individual plugins. This repo contains the marketplace definition and all plugin source code.
 
-| Plugin | Description | Install |
-|--------|-------------|---------|
-| **spec-workflow** | Agents, rules, hooks, commands, and review skills for spec-driven development | `/plugin install spec-workflow@harness-marketplace` |
-| **analysis** | Codebase analysis and architecture analysis skills | `/plugin install analysis@harness-marketplace` |
-| **coding** | Coding, testing, API design, and skill-building skills | `/plugin install coding@harness-marketplace` |
-| **office** | Office document handling (xlsx, publishing, file upload) | `/plugin install office@harness-marketplace` |
-| **interview** | Technical interview preparation skills | `/plugin install interview@harness-marketplace` |
-| **reference** | AI coding tool reference documentation | `/plugin install reference@harness-marketplace` |
+## Repo Structure
 
-## Setup
+```
+.claude-plugin/marketplace.json   # Marketplace registry — lists all plugins with name + source path
+plugins/                           # All plugin packages live here
+  <plugin-name>/
+    .claude-plugin/plugin.json     # Plugin manifest (name, version, description, author, license)
+    agents/                        # Subagent definitions (markdown)
+    commands/                      # Slash command definitions (markdown)
+    rules/                         # Behavioral rules loaded into agent context
+    skills/<skill-name>/SKILL.md   # Skill definitions with frontmatter + body
+    hooks/hooks.json               # Event hooks (e.g., auto-review on spec creation)
+template/                          # Document templates used by spec-workflow agents
+  init/                            # Project initialization templates
+  specs/                           # Spec document templates (requirements, PRD, design, etc.)
+  review/                          # Review templates and calibration examples
+  project/                         # Living doc templates (architecture, API, glossary, etc.)
+docs/                              # Superpowers specs and plans (internal, not shipped)
+```
 
+## The Six Plugins
+
+| Plugin | Key Contents |
+|--------|-------------|
+| **spec-workflow** | 10 agents (planner, evaluator, requirements, prd, design, dev-plan, testing-plan, release-plan, review, doc), 7 rules, 8 commands, hooks, 12 skills (superpowers orchestrator, brainstorming, TDD, debugging, code review, design review, etc.) |
+| **analysis** | 5 skills (codebase-to-docs, system-architecture-analysis, deep-functional-analysis, source-functional-analysis, codebase-analysis), 2 agents, 3 commands, Astro-based docs site |
+| **coding** | Skills: write-skill, write-agent, write-command, skill-creator/audit/discovery, api-design, testing-patterns, browser-testing, agent-browser, ui-ux-pro-max, next-best-practices, git-workflow, sdk-development, mcp-builder, claude-ext-author |
+| **office** | Skills: xlsx, pdf, pptx, docx (each with Python scripts for document manipulation) |
+| **interview** | Skills: project-resume (with evals and template) |
+| **wiki** | Skills: wiki-ingest, wiki-query, wiki-lint. Agent: wiki-maintainer. Rule: wiki-schema. Raw sources and LLM-maintained wiki pages for AI coding tools (Claude Code, Cursor, Codex, OpenCode, Plugin Builder) |
+
+## Development Commands
+
+### Test a plugin locally
 ```bash
-# Add the marketplace
-/plugin marketplace add https://github.com/platootalp/harness-marketplace
-
-# Install plugins
-/plugin install spec-workflow@harness-marketplace
-/plugin install coding@harness-marketplace
+claude --plugin-dir ./plugins/spec-workflow
 ```
 
-## Core Principles
-
-### 1. Multi-Agent Separation
-Separate the agent doing work from the agent judging it.
-
-### 2. Three-Agent System
-- **Planner**: Expands simple prompts into full product specs
-- **Generator**: Works in sprints, implements features against agreed contracts
-- **Evaluator**: Tests via appropriate tools, grades against concrete criteria
-
-### 3. Sprint Contracts
-Before each work chunk, Generator and Evaluator negotiate what "done" looks like.
-
-### 4. Iterative Refinement
-Multiple iteration cycles with feedback flow from Evaluator back to Generator.
-
-### 5. Simplify as Models Improve
-Every component encodes assumptions about what the model can't do. Regularly stress-test these assumptions.
-
-## Workflow Chain
-
-```
-User → Planner → Sprint Contract → Generator → Evaluator → [Decision]
-                                      ↑           ↓
-                                      └── feedback ←┘
-                                                ↓ (if approved)
-                                           Doc Agent
-                                                ↓
-                                            Release
+### Validate the marketplace
+```bash
+claude plugin validate .
 ```
 
-## Review Decisions
-
-| Decision | Score | Next Step |
-|----------|-------|-----------|
-| Approved | 80-100 | Proceed to next stage |
-| Approved with Conditions | 60-79 | Proceed, fix in next version |
-| Needs Iteration | 40-59 | Return to Generator for refinement |
-| Rejected | <40 | Major rework required |
-
-## Document Structure
-
+### Analysis plugin docs site
+```bash
+cd plugins/analysis/site
+npm install
+npm run setup     # Symlink ../docs into site/
+npm run dev       # Astro dev server
+npm run build     # Build search index + static site
 ```
-docs/
-├── init/                    # Project init templates
-├── project/                 # Living project docs (doc-agent)
-├── review/                  # All review documents
-│   └── calibration/         # Evaluator calibration examples
-├── specs/                   # Development specs
-│   ├── requirements/
-│   ├── prd/
-│   ├── design/
-│   ├── dev-plan/
-│   ├── testing-plan/
-│   ├── release-plan/
-│   └── sprint-contracts/    # Sprint contract documents
-└── superpowers/             # Superpowers specs and plans
-```
+
+## Architecture: Spec-Driven Workflow
+
+The core workflow follows a three-agent separation pattern:
+
+1. **Planner** expands a user prompt into a full product spec (requirements → PRD → design)
+2. **Generator** implements features in sprints against sprint contracts
+3. **Evaluator** tests and grades against concrete criteria, returning feedback to Generator
+
+Sprint contracts are negotiated before each work chunk. The evaluator uses a 0-100 scoring scale: Approved (80+), Approved with Conditions (60-79), Needs Iteration (40-59), Rejected (<40).
+
+The `superpowers` skill is the top-level router that dispatches to sub-skills based on development phase (brainstorming, debugging, TDD, code review, parallel implementation).
+
+## Adding a New Plugin
+
+1. Create `plugins/<name>/` directory with `.claude-plugin/plugin.json`
+2. Add skills to `plugins/<name>/skills/<skill-name>/SKILL.md`
+3. Optionally add agents, commands, rules, hooks subdirectories
+4. Register in `.claude-plugin/marketplace.json` under `plugins` array
+5. Validate: `claude plugin validate .`
+
+## Adding a Skill to an Existing Plugin
+
+Create `plugins/<plugin>/skills/<skill-name>/SKILL.md` with YAML frontmatter (`name`, `description`) and markdown body. Skills can include `references/`, `templates/`, `scripts/`, and `evals/` subdirectories for supporting content.
+
+## Key Conventions
+
+- All plugin content is markdown — agents, commands, rules, and skills are `.md` files
+- Skills use `SKILL.md` as the entry point with YAML frontmatter (`name`, `description` fields minimum)
+- The spec-workflow hooks config (`plugins/spec-workflow/hooks/hooks.json`) auto-triggers review reminders when spec docs are written to `docs/specs/`
+- Document templates in `template/` follow the naming pattern `YYYY-MM-DD-<slug>` for dated specs
+- The analysis plugin's `.gitignore` excludes generated `docs/` and site build artifacts (`site/node_modules/`, `site/dist/`, `site/.astro/`)
