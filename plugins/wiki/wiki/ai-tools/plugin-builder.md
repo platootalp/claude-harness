@@ -39,7 +39,7 @@ marketplace.json with source types: relative path, GitHub, Git URL, Git subdirec
 GitHub hosting, private repos, team marketplaces, Anthropic marketplace submission.
 
 ### Common Pitfalls
-Components inside .claude-plugin/, absolute paths, referencing outside plugin dir, missing CLAUDE_PLUGIN_ROOT in hooks/MCP, version not bumped.
+Components inside .claude-plugin/, absolute paths, referencing outside plugin dir, missing CLAUDE_PLUGIN_ROOT in hooks/MCP, version not bumped, duplicate version field, relative paths in URL-based marketplaces.
 
 ### Reference Implementation (codex-plugin-cc)
 Companion script design, command frontmatter controls, thin forwarder subagent, plugin-embedded skills, hook lifecycle with stop-time gate, hook-to-session data passing.

@@ -47,3 +47,49 @@ Schema references:
 - Server: https://opencode.ai/docs/server/
 - Plugins: https://opencode.ai/docs/plugins/
 - Ecosystem: https://opencode.ai/docs/ecosystem/
+
+## Quick Reference
+
+### Configuration
+- JSON/JSONC config with `$schema` support
+- 8 priority levels from remote to macOS managed
+- TUI config for terminal UI customization
+
+### Built-in Tools (12)
+bash, edit, write, read, grep, glob, apply_patch, skill, todowrite, webfetch, websearch, question, lsp
+
+### Built-in Agents
+- Primary: Build, Plan
+- Subagents: General, Explore, Scout
+- Hidden system: Compaction, Title, Summary
+
+### Permissions
+- Three actions: allow, ask, deny
+- Glob patterns for file matching
+- Last matching rule wins
+
+### Skills
+- SKILL.md format
+- Discovery paths: `.opencode/skills/`, `~/.config/opencode/skills/`
+- Compatible with `.claude/skills/` and `.agents/skills/`
+
+### Custom Commands
+- JSON config or markdown files in `.opencode/commands/`
+
+### MCP Servers
+- Local: command + env
+- Remote: URL + headers/OAuth
+- CLI commands for management
+
+### Plugins
+- TypeScript modules, npm packages
+- Key event hooks
+
+### Custom Tools
+- TypeScript files using `tool()` helper with Zod schemas
+
+### Rules (AGENTS.md)
+- Project root, global, additional instructions
+
+### Variable Substitution
+- `{env:VAR}`, `{file:path}`

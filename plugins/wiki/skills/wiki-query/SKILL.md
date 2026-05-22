@@ -40,6 +40,10 @@ The index replaces the old `ai-tool-reference` router. When a question comes in:
 - The domain headings in the index serve as the routing table
 - If unsure which domain, scan multiple domain sections
 
+## Path Resolution
+
+All wiki paths are relative to the wiki plugin root (`plugins/wiki/`). When the skill references `wiki/index.md`, the full path is `plugins/wiki/wiki/index.md`. When a wiki page references a raw source like `raw/ai-tools/claude-code.md`, the full path is `plugins/wiki/raw/ai-tools/claude-code.md`.
+
 ## Guidelines
 
 - Prefer wiki pages over raw sources — the wiki is the synthesized, maintained layer
