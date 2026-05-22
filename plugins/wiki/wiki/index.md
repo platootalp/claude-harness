@@ -1,9 +1,21 @@
 # Wiki Index
 
-## Domain: ai-tools
+## Sources
 
-- [Claude Code](ai-tools/claude-code.md) — Claude Code CLI features, config, skills, hooks, MCP, permissions, Agent SDK
-- [Cursor](ai-tools/cursor.md) — Cursor AI editor features, CLI, hooks, MCP, permissions, rules
-- [OpenAI Codex](ai-tools/codex.md) — OpenAI Codex features, config, skills, plugins, sandboxing, automation
-- [OpenCode](ai-tools/opencode.md) — OpenCode CLI features, config, tools, agents, permissions, plugins, custom tools
-- [Plugin Builder](ai-tools/plugin-builder.md) — Claude Code plugin and marketplace construction guide
+- [Claude Code Docs](sources/claude-code-docs.md) — Claude Code official documentation index
+- [Codex Docs](sources/codex-docs.md) — OpenAI Codex CLI documentation index
+- [Cursor Docs](sources/cursor-docs.md) — Cursor AI editor documentation index
+- [OpenCode Docs](sources/opencode-docs.md) — OpenCode CLI documentation index
+- [Plugin Builder Docs](sources/plugin-builder-docs.md) — Claude Code plugin reference documentation index
+
+## Entities
+
+- [Claude Code](entities/claude-code.md) — Anthropic's official CLI for Claude
+- [Codex](entities/codex.md) — OpenAI's autonomous coding agent
+- [Cursor](entities/cursor.md) — AI-first code editor built on VS Code
+- [OpenCode](entities/opencode.md) — Open-source CLI for AI coding
+- [Plugin Builder](entities/plugin-builder.md) — Claude Code plugin system
+
+## Concepts
+
+## Syntheses

@@ -1,3 +1,12 @@
+---
+tags: [ai-tools, cli, coding]
+date: 2026-05-22
+source_url: https://opencode.ai/docs/
+media: doc-index
+domain: ai-tools
+status: processed
+---
+
 # OpenCode Documentation Index
 
 Source: https://opencode.ai/docs/

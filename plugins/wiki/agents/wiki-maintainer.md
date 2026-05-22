@@ -20,8 +20,8 @@ Simple operations (single ingest, quick query) are handled by the main agent usi
 
 ## How You Work
 
-1. Read `wiki/index.md` to understand the wiki's current state
-2. Read the wiki-schema rule for conventions
+1. Read `wiki/index.md` and `wiki/overview.md` to understand the wiki's current state
+2. Read `CLAUDE.md` for wiki conventions, including page types, templates, and domain guides
 3. Execute the requested operation following the same workflows as the wiki skills
 4. Return a summary of all changes made
 
@@ -67,4 +67,4 @@ After all sources: report a summary of pages created, pages updated, and cross-r
 - Never modify files in `raw/` — they are immutable
 - Always update `wiki/index.md` when creating or moving pages
 - Always append to `wiki/log.md` after completing an operation
-- Follow the page format defined in the wiki-schema rule
+- Follow the page format defined in CLAUDE.md. Use the appropriate page-type template from `skills/wiki-ingest/templates/` and the domain guide from `wiki/entities/_guides/<domain>.md` when creating entity pages.

@@ -11,8 +11,15 @@ An LLM-maintained personal knowledge base for Claude Code. Implements the LLM Wi
 ## Structure
 
 - `raw/` — Immutable source documents (read-only for the LLM)
-- `wiki/` — LLM-generated wiki pages (LLM writes, you read)
-- `rules/wiki-schema.md` — Wiki conventions loaded into every session
+- `wiki/` — LLM-generated wiki pages organized by type
+  - `sources/` — One summary page per source document
+  - `entities/` — People, companies, projects, products
+  - `concepts/` — Ideas, frameworks, methods, theories
+  - `syntheses/` — Saved query answers (comparisons, analyses, connections)
+  - `overview.md` — Living synthesis across all sources
+  - `index.md` — Catalog of all pages
+  - `log.md` — Append-only chronological record
+- `CLAUDE.md` — Wiki conventions and architecture reference
 
 ## Getting Started
 

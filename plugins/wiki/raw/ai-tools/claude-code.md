@@ -1,3 +1,12 @@
+---
+tags: [ai-tools, cli, coding]
+date: 2026-05-22
+source_url: https://code.claude.com/docs/
+media: doc-index
+domain: ai-tools
+status: processed
+---
+
 # Claude Code Documentation Index
 
 Source: https://code.claude.com/docs/

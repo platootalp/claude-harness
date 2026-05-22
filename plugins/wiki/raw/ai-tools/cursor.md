@@ -1,3 +1,12 @@
+---
+tags: [ai-tools, editor, coding]
+date: 2026-05-22
+source_url: https://cursor.com/docs
+media: doc-index
+domain: ai-tools
+status: processed
+---
+
 # Cursor Documentation Index
 
 Source: https://cursor.com/docs

@@ -1,3 +1,12 @@
+---
+tags: [ai-tools, cli, coding]
+date: 2026-05-22
+source_url: https://developers.openai.com/codex
+media: doc-index
+domain: ai-tools
+status: processed
+---
+
 # Codex Documentation Index
 
 Source: https://developers.openai.com/codex

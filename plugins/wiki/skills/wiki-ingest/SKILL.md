@@ -23,28 +23,28 @@ Add a new source document to the wiki and integrate its knowledge into existing 
 3. **Save the raw source** (if not already in `raw/`)
    - Write the source document to `raw/<domain>/<source-name>.md`
    - Raw sources are immutable — never modify them after saving
+   - Follow the frontmatter format in `templates/raw-source.md`
 
-4. **Write the wiki page**
-   - Create `wiki/<domain>/<page-name>.md` following the page format from wiki-schema
-   - Include frontmatter (tags, date, sources, status)
-   - Write a Summary section (one paragraph)
-   - Write Details sections covering the key information
-   - Add a See Also section with cross-references to related wiki pages
+4. **Write the wiki pages** — ingest produces two pages
+   - (1) A source summary page in `wiki/sources/<source-name>-docs.md` following `templates/page-source.md`
+   - (2) An entity or concept page — determine based on source content: entity for a specific thing (tool, person, project), concept for an abstract idea or pattern
+   - For entity pages: write to `wiki/entities/<page-name>.md` following `templates/page-entity.md`. Read the domain guide at `wiki/entities/_guides/<domain>.md` for Key Areas. If no guide exists, create areas from the source's natural structure and consider creating a guide
+   - For concept pages: write to `wiki/concepts/<page-name>.md` following `templates/page-concept.md`
 
 5. **Update the index**
    - Read `wiki/index.md`
    - Add the new page entry under the appropriate domain heading
    - If the domain heading doesn't exist, create it
+   - following the format in `templates/index-entry.md`
 
-6. **Update affected pages**
-   - Scan existing wiki pages for concepts that overlap with the new source
-   - Update cross-references, add links to the new page
-   - If the new source contradicts or supersedes existing claims, update those pages and set their status to `needs-update`
-   - Keep changes focused — don't rewrite pages, just add references and note updates
+6. **Update the overview**
+   - Read `wiki/overview.md` and update it following `templates/page-overview.md`
+   - Add the new source to the Domains section, update Active Questions if relevant
 
 7. **Append to the log**
    - Add an entry to `wiki/log.md` in the format: `## [YYYY-MM-DD] ingest | <Source Title>`
    - Briefly describe what was added and which pages were affected
+   - following the format in `templates/log-entry.md`
 
 ## Guidelines
 

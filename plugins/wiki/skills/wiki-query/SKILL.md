@@ -1,6 +1,6 @@
 ---
-name: llm-wiki-query
-description: Answer questions from llm-wiki content. Use when the user asks about a topic that might be covered in the llm-wiki, says "look up X in the llm-wiki", "what does the llm-wiki say about Y", or asks about AI coding tools, features, configuration, or any topic the llm-wiki covers. Routes to the right llm-wiki pages via the index, reads them, and synthesizes an answer.
+name: wiki-query
+description: Answer questions from wiki content. Use when the user asks about a topic that might be covered in the wiki, says "look up X in the wiki", "what does the wiki say about Y", or asks about AI coding tools, features, configuration, or any topic the wiki covers. Routes to the right wiki pages via the index, reads them, and synthesizes an answer.
 ---
 
 # Wiki Query
@@ -26,19 +26,23 @@ Answer questions from the wiki by reading relevant pages and synthesizing an ans
    - Answer the question directly, citing wiki pages with markdown links
    - If the answer combines information from multiple pages, make the connections explicit
    - If the wiki doesn't cover the topic, say so and suggest ingesting a source
+   - Answers can take different forms depending on the question: markdown page, comparison table, slide deck (Marp), chart (matplotlib), canvas
 
-5. **Offer to file substantial answers as new pages**
-   - If the answer required synthesizing multiple pages into a new insight (comparison, analysis, connection), offer to create a new wiki page for it
-   - This is how the wiki compounds — explorations become permanent pages
-   - Only offer for substantial answers, not simple lookups
+5. **File substantial answers as new wiki pages**
+   - If the answer required synthesizing multiple pages into a new insight (comparison, analysis, connection), create a new wiki page for it in `wiki/syntheses/` following `templates/page-synthesis.md`
+   - Set `synthesis_type` based on the answer: `comparison` for side-by-side analysis, `analysis` for deep dives, `connection` for newly discovered relationships
+   - This is how the wiki compounds — explorations become permanent knowledge, not lost in chat history
+   - Only file substantial answers, not simple lookups
+   - Update the index with the new page entry following `templates/index-entry.md`
 
 ## Routing Logic
 
-The index replaces the old `ai-tool-reference` router. When a question comes in:
+The index is organized by page type (Sources, Entities, Concepts, Syntheses). When a question comes in:
 
-- Check `wiki/index.md` for matching pages
-- The domain headings in the index serve as the routing table
-- If unsure which domain, scan multiple domain sections
+- Check `wiki/index.md` for matching pages across all type sections
+- Start with Entities section for questions about specific things
+- Start with Concepts section for questions about ideas and patterns
+- Check Syntheses for existing comparisons or analyses
 
 ## Path Resolution
 

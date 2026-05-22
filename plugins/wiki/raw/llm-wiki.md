@@ -1,3 +1,12 @@
+---
+tags: [pattern, knowledge-base]
+date: 2026-05-22
+source_url: local
+media: pasted
+domain: llm-wiki
+status: processed
+---
+
 # LLM Wiki
 
 A pattern for building personal knowledge bases using LLMs.

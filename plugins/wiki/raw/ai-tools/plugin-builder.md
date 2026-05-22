@@ -1,3 +1,12 @@
+---
+tags: [ai-tools, plugins, coding]
+date: 2026-05-22
+source_url: https://code.claude.com/docs/en/plugins-reference.md
+media: doc-index
+domain: ai-tools
+status: processed
+---
+
 # Claude Code Plugin Builder Documentation Index
 
 Source: https://code.claude.com/docs/en/plugins.md
