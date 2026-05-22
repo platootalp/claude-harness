@@ -30,24 +30,24 @@ An LLM-maintained personal knowledge base for Claude Code. Implements the LLM Wi
 ## Three-Layer Architecture
 
 ```
-raw/          Immutable source documents (read-only)
-wiki/         LLM-generated synthesis pages
-CLAUDE.md     Schema layer — conventions, templates, workflows
+data/raw/      Immutable source documents (read-only)
+data/wiki/     LLM-generated synthesis pages
+CLAUDE.md      Schema layer — conventions, templates, workflows
 ```
 
-- **`raw/`** — Ground truth. Never modify after creation.
-- **`wiki/`** — The LLM writes; humans read. Organized by page type.
+- **`data/raw/`** — Ground truth. Never modify after creation.
+- **`data/wiki/`** — The LLM writes; humans read. Organized by page type.
 - **`CLAUDE.md`** — Co-evolved with the wiki as domains and conventions grow.
 
 ## Wiki Page Types
 
 | Type | Directory | Created When | Purpose |
 |------|-----------|-------------|---------|
-| source | `wiki/sources/` | Ingest | Summary of a raw source document |
-| entity | `wiki/entities/` | Ingest (about a specific thing) | People, companies, products, projects |
-| concept | `wiki/concepts/` | Ingest (about an abstract idea) | Ideas, frameworks, methods, theories |
-| synthesis | `wiki/syntheses/` | Query answer filed back | Comparisons, analyses, connections |
-| overview | `wiki/overview.md` | Updated every ingest | Living synthesis across all sources |
+| source | `data/wiki/sources/` | Ingest | Summary of a raw source document |
+| entity | `data/wiki/entities/` | Ingest (about a specific thing) | People, companies, products, projects |
+| concept | `data/wiki/concepts/` | Ingest (about an abstract idea) | Ideas, frameworks, methods, theories |
+| synthesis | `data/wiki/syntheses/` | Query answer filed back | Comparisons, analyses, connections |
+| overview | `data/wiki/overview.md` | Updated every ingest | Living synthesis across all sources |
 
 ## Directory Structure
 
@@ -60,17 +60,19 @@ wiki/
 │   ├── wiki-ingest/              # Ingest skill + templates/
 │   ├── wiki-query/               # Query skill
 │   └── wiki-lint/                # Lint skill
-├── raw/                          # Immutable source documents
-│   ├── ai-tools/                 # Domain-organized sources
-│   └── llm-wiki.md              # Pattern reference
-└── wiki/                         # LLM-maintained wiki pages
-    ├── index.md                  # Content catalog
-    ├── overview.md               # Cross-source synthesis
-    ├── log.md                    # Append-only activity log
-    ├── sources/                  # Source summary pages
-    ├── entities/                 # Entity pages + _guides/
-    ├── concepts/                 # Concept pages
-    └── syntheses/                # Synthesis pages
+├── data/
+│   ├── config.json               # Wiki configuration
+│   ├── raw/                      # Immutable source documents
+│   │   ├── ai-tools/             # Domain-organized sources
+│   │   └── llm-wiki.md          # Pattern reference
+│   └── wiki/                     # LLM-maintained wiki pages
+│       ├── index.md              # Content catalog
+│       ├── overview.md           # Cross-source synthesis
+│       ├── log.md                # Append-only activity log
+│       ├── sources/              # Source summary pages
+│       ├── entities/             # Entity pages + _guides/
+│       ├── concepts/             # Concept pages
+│       └── syntheses/            # Synthesis pages
 ```
 
 ## Current Domains
@@ -78,11 +80,37 @@ wiki/
 The wiki currently covers **AI coding tools**:
 
 - Claude Code, Codex, Cursor, OpenCode, Plugin Builder
-- Domain guide at `wiki/entities/_guides/ai-tools.md`
+- Domain guide at `data/wiki/entities/_guides/ai-tools.md`
 
 ## Getting Started
 
-1. Drop a source into `raw/` or paste text
+1. Drop a source into `data/raw/` or paste text
 2. Run `/wiki-ingest` to process the source
 3. Query with `/wiki-query` or ask naturally
 4. Periodically `/wiki-lint` to keep the wiki healthy
+
+## Evaluation
+
+The wiki plugin includes an LLM-as-judge evaluation system for measuring ingest output quality.
+
+### Quick Start
+
+```bash
+cd plugins/wiki/skills/wiki-ingest/evals
+./run-eval.sh                    # Run all samples
+./run-eval.sh cursor             # Run specific sample
+./run-eval.sh --model opus       # Use different judge model
+```
+
+Requires: `ANTHROPIC_API_KEY` environment variable and `jq`.
+
+### Scoring
+
+Pages are scored on 5 dimensions (0-5 each, weighted):
+- **Completeness** (25%) — Are all key information from the source present?
+- **Accuracy** (25%) — Is the content factually consistent with the source?
+- **Structure** (15%) — Does the page follow its template?
+- **Depth** (20%) — Does each section meet depth targets?
+- **Cross-references** (15%) — Are links present and correctly formatted?
+
+Passing threshold: 3.5/5.0
