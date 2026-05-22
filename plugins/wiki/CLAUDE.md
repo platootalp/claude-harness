@@ -10,8 +10,10 @@ The human's job is to curate sources, direct the analysis, ask good questions, a
 
 ## Three-Layer Architecture
 
-- **`raw/`** — Immutable source documents. Never modify these. They are ground truth for re-synthesis if wiki pages go stale.
-- **`wiki/`** — LLM-generated synthesis pages organized by type. The LLM writes these; humans read them. A single source may touch 10-15 wiki pages via cross-references and updates.
+All wiki data lives under a configurable data root (default: `data/`). The `data/config.json` file at the data root stores plugin configuration including the `dataDir` field, which points to the data directory. Skills resolve all paths through this config.
+
+- **`data/raw/`** — Immutable source documents. Never modify these. They are ground truth for re-synthesis if wiki pages go stale.
+- **`data/wiki/`** — LLM-generated synthesis pages organized by type. The LLM writes these; humans read them. A single source may touch 10-15 wiki pages via cross-references and updates.
 - **`CLAUDE.md`** (this file) — The schema layer. Tells the LLM how the wiki is structured, what conventions to follow, and what workflows to execute. You and the LLM co-evolve this over time as you figure out what works for your domain.
 
 ## Page Types
@@ -32,9 +34,10 @@ The `page_type` field in frontmatter identifies the type. Each type has a templa
 
 ## Key Files
 
-- `wiki/index.md` — Content catalog organized by page type (Sources, Entities, Concepts, Syntheses). Updated on every ingest. The wiki-query skill reads this first to find relevant pages. Works well at moderate scale (~100 sources, ~hundreds of pages) without embedding-based RAG.
-- `wiki/log.md` — Append-only activity log. Never rewrite, only append entries in `## [YYYY-MM-DD] operation | Title` format. The consistent prefix makes it parseable: `grep "^## \[" log.md | tail -5`.
-- `wiki/overview.md` — Living synthesis across all sources. Updated on every ingest. The highest-level page in the wiki.
+- `data/config.json` — Plugin configuration including the `dataDir` field that points to the data directory. Skills read this to resolve all data paths.
+- `data/wiki/index.md` — Content catalog organized by page type (Sources, Entities, Concepts, Syntheses). Updated on every ingest. The wiki-query skill reads this first to find relevant pages. Works well at moderate scale (~100 sources, ~hundreds of pages) without embedding-based RAG.
+- `data/wiki/log.md` — Append-only activity log. Never rewrite, only append entries in `## [YYYY-MM-DD] operation | Title` format. The consistent prefix makes it parseable: `grep "^## \[" log.md | tail -5`.
+- `data/wiki/overview.md` — Living synthesis across all sources. Updated on every ingest. The highest-level page in the wiki.
 
 ## Wiki Page Format
 
@@ -64,7 +67,7 @@ Every raw source uses YAML frontmatter with these fields:
 
 ## Templates
 
-Template files in `skills/wiki-ingest/templates/` define the required format for each document type. Skills reference templates in their workflow steps. When writing a document, read the template first, then fill in the placeholders.
+Template files in `skills/wiki-ingest/templates/` define the required format for each document type. Skills reference templates in their workflow steps. When writing a document, read the template first, then fill in the placeholders. Templates include depth targets, example content, and quality checklists to guide consistent output.
 
 - `templates/raw-source.md` — raw source frontmatter
 - `templates/page-source.md` — source summary page
@@ -77,20 +80,20 @@ Template files in `skills/wiki-ingest/templates/` define the required format for
 
 ## Domain Guides
 
-Each domain has a guide at `wiki/entities/_guides/<domain>.md` that defines the Key Areas for entity pages in that domain. When ingesting a source, the agent reads the domain guide to determine which areas to create and what information to extract. If no guide exists, the agent creates areas from the source's natural structure and should consider creating a guide for future sources.
+Each domain has a guide at `data/wiki/entities/_guides/<domain>.md` that defines the Key Areas for entity pages in that domain. When ingesting a source, the agent reads the domain guide to determine which areas to create and what information to extract. If no guide exists, the agent creates areas from the source's natural structure and should consider creating a guide for future sources.
 
-Domain guides are meta-files — they are not listed in `wiki/index.md`.
+Domain guides are meta-files — they are not listed in `data/wiki/index.md`.
 
 ## Naming Conventions
 
 - File names: kebab-case (e.g. `claude-code.md`, `plugin-builder.md`)
-- Domain folders under `raw/`: kebab-case (e.g. `ai-tools/`)
+- Domain folders under `data/raw/`: kebab-case (e.g. `ai-tools/`)
 - One page per concept/entity; merge related topics rather than splitting
 - When a page is superseded, mark it `needs-update` rather than deleting
 
 ## Cross-Reference Format
 
-Pages reference each other using relative paths across type directories:
+Pages reference each other using relative paths across type directories. All paths are relative to `data/wiki/`:
 
 - Same directory: `[Codex](./codex.md)`
 - To sources: `[Source](../sources/codex-docs.md)`
@@ -98,10 +101,11 @@ Pages reference each other using relative paths across type directories:
 - To concepts: `[Concept](../concepts/llm-wiki.md)`
 - To syntheses: `[Comparison](../syntheses/claude-code-vs-codex.md)`
 - To overview: `[Overview](../overview.md)` (from subdirectories)
+- To raw sources: `[Raw](../../raw/ai-tools/codex.md)`
 
 ## Index Format
 
-`wiki/index.md` catalogs every wiki page, organized by page type:
+`data/wiki/index.md` catalogs every wiki page, organized by page type:
 
 ```markdown
 # Wiki Index
@@ -121,7 +125,7 @@ Update index on every ingest.
 
 ## Log Format
 
-`wiki/log.md` is append-only. Never rewrite. Each entry follows:
+`data/wiki/log.md` is append-only. Never rewrite. Each entry follows:
 
 ```markdown
 ## [YYYY-MM-DD] operation | Title
@@ -132,7 +136,7 @@ Description of what was done.
 ## Operations
 
 - **Ingest** (`/wiki-ingest`): Read source → discuss with user → save raw (with frontmatter) → write source summary page + entity/concept page → update index → update overview → update affected pages' cross-references → append to log
-- **Query** (`/wiki-query`): Read index → find relevant pages → read pages → fall back to raw sources if needed → synthesize answer. Answers can take different forms: markdown page, comparison table, slide deck (Marp), chart (matplotlib). Substantial answers should be filed as synthesis pages in `wiki/syntheses/` — this is how the wiki compounds.
+- **Query** (`/wiki-query`): Read index → find relevant pages → read pages → fall back to raw sources if needed → synthesize answer. Answers can take different forms: markdown page, comparison table, slide deck (Marp), chart (matplotlib). Substantial answers should be filed as synthesis pages in `data/wiki/syntheses/` — this is how the wiki compounds.
 - **Lint** (`/wiki-lint`): Scan for contradictions, stale claims, orphan pages, missing cross-references → check index completeness → suggest new questions and sources → apply approved fixes → append to log. Never delete pages during lint.
 
 ## Agent Delegation
@@ -142,3 +146,4 @@ Simple operations (single ingest, quick query) run as skills on the main agent. 
 ## Conventions
 
 - One source → one source summary page + one entity/concept page. Synthesize in the LLM's own words, organized by concept rather than mirroring source structure.
+- All data paths resolve through `data/config.json`. Default data root is `data/`.
