@@ -43,8 +43,8 @@ plugins/wiki/
 }
 ```
 
-- `dataDir`: path to the data directory. `"."` means the `data/` directory itself. Can be an absolute path or relative to `data/`. All skills resolve paths through this config.
-- Skills read `data/config.json` at startup, resolve `raw/` and `wiki/` relative to `dataDir`.
+- `dataDir`: path to the data directory, relative to the plugin root (`plugins/wiki/`). `"."` means the `data/` directory itself. Can also be an absolute path. All skills resolve `raw/` and `wiki/` inside this directory.
+- Skills read `data/config.json` at startup, resolve `raw/` and `wiki/` relative to the resolved `dataDir` path.
 
 ### Migration
 
