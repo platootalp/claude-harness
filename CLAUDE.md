@@ -108,3 +108,8 @@ Create `plugins/<plugin>/skills/<skill-name>/SKILL.md` with YAML frontmatter (`n
 - The spec-workflow hooks config (`plugins/spec-workflow/hooks/hooks.json`) auto-triggers review reminders when spec docs are written to `docs/specs/`
 - Document templates in `template/` follow the naming pattern `YYYY-MM-DD-<slug>` for dated specs
 - The analysis plugin's `.gitignore` excludes generated `docs/` and site build artifacts (`site/node_modules/`, `site/dist/`, `site/.astro/`)
+- **Version control (SemVer):** Every plugin change must update `version` in its `.claude-plugin/plugin.json`
+  - **Patch** (`0.1.0` → `0.1.1`): bug fix, doc correction, minor adjustment that doesn't change functional behavior
+  - **Minor** (`0.1.0` → `0.2.0`): new skill/agent/command/rule, feature enhancement, non-breaking changes
+  - **Major** (`0.x.y` → `1.0.0`): breaking changes — removed skills, changed interfaces, incompatible config
+- **Changelog:** On every plugin content change, simultaneously: (1) update `plugin.json` version, (2) add entry under `[Unreleased]` in `CHANGELOG.md`; versions are finalized at release time; each plugin versions independently
