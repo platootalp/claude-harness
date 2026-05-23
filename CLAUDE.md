@@ -37,6 +37,23 @@ docs/                              # Superpowers specs and plans (internal, not 
 | **interview** | Skills: project-resume (with evals and template) |
 | **wiki** | Skills: wiki-ingest, wiki-query, wiki-lint. Agent: wiki-maintainer. Rule: wiki-schema. Raw sources and LLM-maintained wiki pages for AI coding tools (Claude Code, Cursor, Codex, OpenCode, Plugin Builder) |
 
+## Installing Plugins
+
+First, add the marketplace:
+```
+/plugin marketplace add platootalp/claude-harness
+```
+
+Then install individual plugins:
+```
+/plugin install spec-workflow
+/plugin install analysis
+/plugin install coding
+/plugin install office
+/plugin install interview
+/plugin install wiki
+```
+
 ## Development Commands
 
 ### Test a plugin locally
