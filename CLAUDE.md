@@ -40,12 +40,14 @@ docs/                              # Superpowers specs and plans (internal, not 
 ## Installing Plugins
 
 First, add the marketplace:
-```
+
+```bash
 /plugin marketplace add platootalp/claude-harness
 ```
 
 Then install individual plugins:
-```
+
+```bash
 /plugin install spec-workflow
 /plugin install analysis
 /plugin install coding
