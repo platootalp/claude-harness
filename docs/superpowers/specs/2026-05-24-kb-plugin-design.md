@@ -205,78 +205,537 @@ data/wiki/
 
 ## 阶段 3：Load/Present
 
-### 三个视图
+### 整体架构
 
-站点呈现同一个知识库的三个视角，各有用途。
+站点基于 Astro 6 + React 18 + Tailwind 3，从 analysis 现有站点增强而来。核心变化：
 
-**Raw 视图** — 浏览 Extract 的深度分析文档
+1. 内容源从单一 `docs/` 目录扩展为 `data/raw/` + `data/wiki/` 两个内容集合
+2. 页面路由从单层 `/docs/[slug]` 扩展为多项目、多视图的路由体系
+3. 新增知识图谱可视化（力导向图）
+4. 新增项目切换、维度筛选等交互组件
 
-- 入口页：按维度分组（topology、api、data-model、flows、concepts），每组显示文档数量
-- 详情页：渲染 raw markdown，保留 Mermaid 图表、代码块、callout
-- 侧边栏：按维度树形导航
-- 用途：查看特定模块的分析细节、代码证据、技术机制
+### 内容集合
 
-**Wiki 视图** — 浏览 Transform 的结构化知识页面
+两个 Astro content collection，分别加载 raw 和 wiki 内容：
 
-- 入口页：按页面类型分组（entity、concept、synthesis），每组显示页面数量
-- 详情页：渲染 wiki 页面，带交叉引用链接和来源追溯（链接回 raw 文档）
-- 侧边栏：按页面类型树形导航
-- 用途：快速查找、跟随交叉引用探索关联知识
+**`raw` 集合**：加载 `data/raw/<project>/` 下所有 markdown（排除 `_map.md`）
 
-**图谱视图** — 交互式知识图谱
+```typescript
+// content.config.ts
+const raw = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: RAW_ROOT }),
+  schema: z.object({
+    project: z.string(),
+    dimension: z.enum(['topology', 'api', 'data-model', 'flows', 'concepts']),
+    date: z.string(),
+    status: z.enum(['unprocessed', 'processed']),
+    tags: z.array(z.string()).optional(),
+  }),
+});
+```
 
-- 力导向图：节点 = wiki 页面（entity/concept/synthesis），边 = 交叉引用关系
-- 点击节点：弹出摘要卡片，可跳转到 wiki 详情页
-- 着色模式：按维度（来自哪个 Extract 维度）、按类型（entity/concept/synthesis）、按项目
-- 筛选：按维度、类型、项目筛选节点
-- 布局控制：收缩/展开、聚焦节点邻居
-- 用途：发现未知关联、一眼看清知识结构
+**`wiki` 集合**：加载 `data/wiki/projects/<project>/` 下所有 markdown
 
-### 站点结构
+```typescript
+const wiki = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: WIKI_ROOT }),
+  schema: z.object({
+    page_type: z.enum(['entity', 'concept', 'synthesis']),
+    dimension: z.enum(['topology', 'api', 'data-model', 'flows', 'concepts']).optional(),
+    project: z.string(),
+    tags: z.array(z.string()).optional(),
+    sources: z.array(z.string()).optional(),  // 指向 raw 文档的路径
+    date: z.string(),
+    last_updated: z.string(),
+  }),
+});
+```
+
+**图谱数据**：`build-graph` skill 产出的 `data/graph.json`，在构建时复制到 `public/graph.json`，运行时由 `KnowledgeGraph.tsx` 加载。
+
+```typescript
+// graph.json 结构
+{
+  nodes: Array<{
+    id: string;           // wiki 页面路径
+    label: string;        // 页面标题
+    type: 'entity' | 'concept' | 'synthesis';
+    dimension?: string;   // 来自哪个 extract 维度
+    project: string;
+    summary: string;      // 一句话摘要，用于悬浮卡片
+  }>;
+  edges: Array<{
+    source: string;       // 节点 id
+    target: string;       // 节点 id
+    signal: 'name-overlap' | 'shared-code' | 'parent-child' | 'flow-participation';
+  }>;
+}
+```
+
+### 路由体系
 
 ```
-site/
-├── src/
-│   ├── pages/
-│   │   ├── index.astro                    # 首页：项目卡片列表
-│   │   ├── projects/
-│   │   │   └── [project]/
-│   │   │       ├── index.astro            # 项目首页：三个视图入口
-│   │   │       ├── raw/
-│   │   │       │   ├── index.astro        # Raw 文档总览：按维度分组
-│   │   │       │   └── [...slug].astro    # Raw 文档详情页
-│   │   │       ├── wiki/
-│   │   │       │   ├── index.astro        # Wiki 总览：按页面类型分组
-│   │   │       │   └── [...slug].astro    # Wiki 页面详情页
-│   │   │       └── graph.astro            # 知识图谱：力导向图
-│   │   └── search.astro                   # 全局搜索
-│   ├── components/
-│   │   ├── ProjectSwitcher.astro          # 项目切换器
-│   │   ├── DimensionFilter.astro          # 维度筛选器（raw 视图）
-│   │   ├── PageTypeFilter.astro           # 页面类型筛选器（wiki 视图）
-│   │   ├── KnowledgeGraph.tsx             # 力导向图组件
-│   │   ├── GraphControls.tsx              # 图谱控制面板
-│   │   └── ...                            # 复用现有组件
-│   └── ...
+/                                   → 全局首页（项目卡片列表）
+/projects/[project]                 → 项目首页（三视图入口 + 统计）
+/projects/[project]/raw             → Raw 视图总览
+/projects/[project]/raw/[...slug]   → Raw 文档详情
+/projects/[project]/wiki            → Wiki 视图总览
+/projects/[project]/wiki/[...slug]  → Wiki 页面详情
+/projects/[project]/graph           → 知识图谱
+/search                             → 全局搜索
+/sitemap.xml                        → 站点地图
+/404                                → 404 页
 ```
+
+### 全局首页
+
+**页面**：`/src/pages/index.astro`
+
+**布局**：不使用 DocLayout，使用独立的 `HomeLayout.astro`（无侧边栏，全宽内容区）
+
+**内容结构**：
+
+```
+┌──────────────────────────────────────────────────────┐
+│  TopNav（项目切换器 + 搜索 + 主题切换）                │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│  KB — 自动化个人知识库                                │
+│                                                      │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐    │
+│  │ claude-    │  │ another-   │  │ third-     │    │
+│  │ harness    │  │ project    │  │ project    │    │
+│  │            │  │            │  │            │    │
+│  │ 23 raw     │  │ 15 raw    │  │ 8 raw      │    │
+│  │ 15 wiki    │  │ 10 wiki   │  │ 6 wiki     │    │
+│  │ 5 dims     │  │ 5 dims    │  │ 3 dims     │    │
+│  │            │  │            │  │            │    │
+│  │ 最近更新:  │  │ 最近更新:  │  │ 最近更新:  │    │
+│  │ 2026-05-24│  │ 2026-05-20│  │ 2026-05-15│    │
+│  │            │  │            │  │            │    │
+│  │ [进入]     │  │ [进入]     │  │ [进入]     │    │
+│  └────────────┘  └────────────┘  └────────────┘    │
+│                                                      │
+│  最近活动                                            │
+│  • claude-harness: topology 提取完成 — 05-24         │
+│  • claude-harness: api 提取完成 — 05-24              │
+│  • another-project: 全量转化完成 — 05-20             │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+```
+
+**数据来源**：
+- 项目列表：扫描 `data/raw/` 下的子目录
+- 每个项目的统计：从 `raw` 和 `wiki` 集合中按 `project` 字段过滤计数
+- 最近活动：从 `data/wiki/log.md` 解析最近 N 条记录
 
 ### 项目首页
 
+**页面**：`/src/pages/projects/[project]/index.astro`
+
+**布局**：`DocLayout.astro`（侧边栏显示项目导航树）
+
+**内容结构**：
+
 ```
-┌─────────────────────────────────────────────┐
-│  claude-harness                              │
-├─────────────┬──────────────┬────────────────┤
-│  Raw Docs   │  Wiki Pages  │  Knowledge     │
-│  23 docs    │  15 pages    │  Graph         │
-│  5 dims     │  3 types     │  45 nodes      │
-│             │              │  67 edges       │
-│  [Browse]   │  [Browse]    │  [Explore]     │
-├─────────────┴──────────────┴────────────────┤
-│  Recent Activity                            │
-│  • topology extracted — 2026-05-24          │
-│  • api extracted — 2026-05-24               │
-│  • wiki transformed — 2026-05-24            │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│  TopNav（面包屑: KB / claude-harness）                │
+├──────────┬───────────────────────────────────────────┤
+│ Sidebar  │                                           │
+│          │  claude-harness                            │
+│ ▸ Raw    │                                           │
+│ ▸ Wiki   │  ┌──────────┬──────────┬──────────┐      │
+│ ▸ Graph  │  │ Raw Docs │  Wiki    │  Graph   │      │
+│          │  │          │  Pages   │          │      │
+│          │  │ 23 docs  │  15 pages│  45 nodes│      │
+│          │  │ 5 dims   │  3 types │  67 edges│      │
+│          │  │          │          │          │      │
+│          │  │ [浏览]   │  [浏览]  │  [探索]  │      │
+│          │  └──────────┴──────────┴──────────┘      │
+│          │                                           │
+│          │  维度覆盖                                  │
+│          │  ┌─────────────────────────────────┐      │
+│          │  │ topology ████████████ 6 docs    │      │
+│          │  │ api       ██████████   5 docs   │      │
+│          │  │ data-model ██████     4 docs    │      │
+│          │  │ flows     ████████████ 5 docs   │      │
+│          │  │ concepts  ████        3 docs    │      │
+│          │  └─────────────────────────────────┘      │
+│          │                                           │
+│          │  最近活动                                  │
+│          │  • topology 提取完成 — 2026-05-24          │
+│          │  • api 提取完成 — 2026-05-24               │
+│          │  • wiki 转化完成 — 2026-05-24              │
+│          └───────────────────────────────────────────┘
+```
+
+**侧边栏**：项目级导航树，固定三组：Raw、Wiki、Graph，点击进入对应视图。
+
+### Raw 视图
+
+#### 总览页
+
+**页面**：`/src/pages/projects/[project]/raw/index.astro`
+
+**布局**：`DocLayout.astro`
+
+**内容结构**：
+
+```
+┌──────────┬───────────────────────────────────────────┐
+│ Sidebar  │  Raw 文档 — claude-harness                  │
+│          │                                           │
+│ ▾ Raw    │  ┌─ topology ──────────────────────┐      │
+│   ▸ topo │  │ 6 docs · 最近更新 2026-05-24     │      │
+│   ▸ api  │  │                                  │      │
+│   ▸ data │  │  • modules/spec-workflow.md      │      │
+│   ▸ flows│  │  • modules/analysis.md           │      │
+│   ▸ conc │  │  • modules/coding.md             │      │
+│ ▸ Wiki   │  │  • modules/office.md             │      │
+│ ▸ Graph  │  │  • modules/interview.md          │      │
+│          │  │  • modules/wiki.md               │      │
+│          │  └──────────────────────────────────┘      │
+│          │                                           │
+│          │  ┌─ api ────────────────────────────┐      │
+│          │  │ 5 docs · 最近更新 2026-05-24      │      │
+│          │  │                                  │      │
+│          │  │  • http/commands.md              │      │
+│          │  │  • http/skills.md                │      │
+│          │  │  • cli/kb.md                     │      │
+│          │  │  ...                              │      │
+│          │  └──────────────────────────────────┘      │
+│          │                                           │
+│          │  ┌─ data-model ─────────────────────┐      │
+│          │  │ 4 docs                            │      │
+│          │  └──────────────────────────────────┘      │
+│          │                                           │
+│          │  ┌─ flows ───────────────────────────┐      │
+│          │  │ 5 docs                            │      │
+│          │  └──────────────────────────────────┘      │
+│          │                                           │
+│          │  ┌─ concepts ─────────────────────────┐    │
+│          │  │ 3 docs                            │      │
+│          │  └──────────────────────────────────┘      │
+└──────────┴───────────────────────────────────────────┘
+```
+
+**侧边栏**：按维度分组，每个维度下展开文件列表。维度名可点击折叠/展开。
+
+**数据来源**：从 `raw` 集合中按 `project` 过滤，按 `dimension` 分组。
+
+#### 详情页
+
+**页面**：`/src/pages/projects/[project]/raw/[...slug].astro`
+
+**布局**：`DocLayout.astro`
+
+**内容结构**：
+
+```
+┌──────────┬───────────────────────────────────────────┐
+│ Sidebar  │  ┌─ 面包屑 ──────────────────────────┐    │
+│          │  │ Raw / topology / spec-workflow      │    │
+│          │  └────────────────────────────────────┘    │
+│ ▾ Raw    │                                           │
+│   ▾ topo │  # spec-workflow 模块拓扑                 │
+│     ▪ spe│                                           │
+│     ▪ ana│  （markdown 正文，包含 Mermaid 图、代码块、│
+│     ▪ cod│   callout、表格等，由 rehype 插件处理）    │
+│   ▸ api  │                                           │
+│   ▸ data │  ┌─ 来源信息 ─────────────────────────┐    │
+│   ▸ flows│  │ 项目: claude-harness                 │    │
+│   ▸ conc │  │ 维度: topology                      │    │
+│   ▸ Wiki │  │ 提取时间: 2026-05-24                 │    │
+│   ▸ Graph│  │ 对应 Wiki: [spec-workflow 实体] →    │    │
+│          │  └────────────────────────────────────┘    │
+│          │                                           │
+│          │  ← 上一篇          下一篇 →                │
+└──────────┴───────────────────────────────────────────┘
+```
+
+**关键组件**：
+- `RawDocMeta.astro`：渲染来源信息卡片（项目、维度、时间、对应 wiki 链接）
+- 复用 `TableOfContents.tsx`（右侧目录）
+- 复用 `Pagination.astro`（同维度内的前后导航）
+- 复用 `ReadingProgress.tsx`
+
+**对应 wiki 链接**：从 `wiki` 集合中查找 `sources` 字段包含当前 raw 路径的页面，渲染为链接。
+
+### Wiki 视图
+
+#### 总览页
+
+**页面**：`/src/pages/projects/[project]/wiki/index.astro`
+
+**布局**：`DocLayout.astro`
+
+**内容结构**：
+
+```
+┌──────────┬───────────────────────────────────────────┐
+│ Sidebar  │  Wiki 页面 — claude-harness                 │
+│          │                                           │
+│ ▸ Raw    │  ┌─ entities (10) ───────────────────┐     │
+│ ▾ Wiki   │  │                                  │     │
+│   ▸ enti │  │  模块实体                          │     │
+│   ▸ conc │  │  • spec-workflow                  │     │
+│   ▸ synt │  │  • analysis                       │     │
+│   ▸ Graph│  │  • coding                          │     │
+│          │  │  ...                               │     │
+│          │  │                                  │     │
+│          │  │  接口实体                          │     │
+│          │  │  • http-commands                  │     │
+│          │  │  • http-skills                    │     │
+│          │  │  ...                               │     │
+│          │  │                                  │     │
+│          │  │  数据实体                          │     │
+│          │  │  • plugin-config                  │     │
+│          │  │  • skill-manifest                 │     │
+│          │  └──────────────────────────────────┘     │
+│          │                                           │
+│          │  ┌─ concepts (3) ────────────────────┐     │
+│          │  │  • 插件生命周期流程                  │     │
+│          │  │  • 知识摄入流程                     │     │
+│          │  │  • 文档生成流程                     │     │
+│          │  └──────────────────────────────────┘     │
+│          │                                           │
+│          │  ┌─ syntheses (2) ───────────────────┐     │
+│          │  │  • 插件-技能交叉分析                 │     │
+│          │  │  • 数据模型-流程关联                 │     │
+│          │  └──────────────────────────────────┘     │
+└──────────┴───────────────────────────────────────────┘
+```
+
+**侧边栏**：按页面类型分组（entity/concept/synthesis），entity 下再按来源维度细分（模块实体、接口实体、数据实体）。
+
+#### 详情页
+
+**页面**：`/src/pages/projects/[project]/wiki/[...slug].astro`
+
+**布局**：`DocLayout.astro`
+
+**内容结构**：
+
+```
+┌──────────┬───────────────────────────────────────────┐
+│ Sidebar  │  ┌─ 面包屑 ──────────────────────────┐    │
+│          │  │ Wiki / entities / spec-workflow     │    │
+│          │  └────────────────────────────────────┘    │
+│ ▸ Raw    │                                           │
+│ ▾ Wiki   │  # spec-workflow                          │
+│   ▾ enti │                                           │
+│     ▪ spe│  （wiki 正文，包含交叉引用链接）            │
+│     ▪ ana│                                           │
+│   ▸ conc │  ┌─ 交叉引用 ─────────────────────────┐    │
+│   ▸ synt │  │ → analysis 模块（entity）            │    │
+│   ▸ Graph│  │ → 插件生命周期流程（concept）         │    │
+│          │  │ → plugin-config 数据模型（entity）    │    │
+│          │  └────────────────────────────────────┘    │
+│          │                                           │
+│          │  ┌─ 来源追溯 ─────────────────────────┐    │
+│          │  │ ← topology/modules/spec-workflow.md  │    │
+│          │  └────────────────────────────────────┘    │
+│          │                                           │
+│          │  ← 上一篇          下一篇 →                │
+└──────────┴───────────────────────────────────────────┘
+```
+
+**关键组件**：
+- `CrossReferences.astro`：渲染该页面的所有交叉引用链接，按引用目标类型分组（entity/concept/synthesis），每个链接显示目标页面标题和类型标签
+- `SourceTraceability.astro`：渲染来源追溯，链接回对应的 raw 文档（从 frontmatter `sources` 字段获取）
+- 复用 `TableOfContents.tsx`、`Pagination.astro`、`ReadingProgress.tsx`
+
+### 图谱视图
+
+**页面**：`/src/pages/projects/[project]/graph.astro`
+
+**布局**：`DocLayout.astro`（侧边栏收起为 icon-rail 模式，最大化图谱画布）
+
+**内容结构**：
+
+```
+┌──────────┬───────────────────────────────────────────┐
+│ Sidebar  │  ┌─ GraphControls ────────────────────┐   │
+│ (icon    │  │ 着色: [维度▼]  筛选: [全部▼]       │   │
+│  rail)   │  │ 布局: [收缩] [展开] [重置]         │   │
+│          │  │ 搜索: [________]                    │   │
+│          │  └────────────────────────────────────┘   │
+│          │                                           │
+│          │  ┌─ KnowledgeGraph ────────────────────┐   │
+│          │  │                                   │   │
+│          │  │       (力导向图)                    │   │
+│          │  │                                   │   │
+│          │  │    ○ spec-workflow                │   │
+│          │  │   / \                             │   │
+│          │  │  ○   ○ analysis  coding           │   │
+│          │  │  |    |  \                         │   │
+│          │  │  ○   ○   ○                       │   │
+│          │  │                                   │   │
+│          │  │  节点颜色:                         │   │
+│          │  │  ■ topology  ■ api  ■ data-model  │   │
+│          │  │  ■ flows     ■ concepts           │   │
+│          │  │                                   │   │
+│          │  └───────────────────────────────────┘   │
+│          │                                           │
+│          │  ┌─ NodeCard（悬浮） ──────────────────┐   │
+│          │  │ spec-workflow                       │   │
+│          │  │ 类型: entity · 维度: topology       │   │
+│          │  │ 10 个技能，7 个规则，8 个命令       │   │
+│          │  │ [查看 Wiki 页面] [查看 Raw 文档]    │   │
+│          │  └────────────────────────────────────┘   │
+└──────────┴───────────────────────────────────────────┘
+```
+
+**关键组件**：
+
+**`KnowledgeGraph.tsx`**（React 客户端组件）：
+- 使用 d3-force 实现力导向布局（forceLink + forceManyBody + forceCenter）
+- 从 `public/graph.json` 加载节点和边数据
+- 节点渲染为圆形，大小按连接度缩放（度越大圆越大）
+- 边渲染为曲线，颜色取源节点颜色，透明度 0.3
+- 拖拽交互：拖拽节点固定位置，双击释放
+- 缩放/平移：d3-zoom 控制画布
+- 悬浮交互：鼠标悬浮显示 `NodeCard`
+- 点击交互：单击节点聚焦（高亮该节点及其邻居，淡化其余），双击跳转到 wiki 详情页
+- 主题感知：监听 `html` 的 `dark` class 变化，调整标签颜色和背景
+
+**`GraphControls.tsx`**（React 客户端组件）：
+- 着色模式选择器：按维度 / 按类型 / 按项目
+- 筛选器：多选维度、类型、项目（控制哪些节点显示）
+- 布局控制：收缩（只显示 entity）、展开（显示全部）、重置（重新计算布局）
+- 搜索框：输入节点名称，匹配的节点高亮脉冲动画
+- 统计信息：当前可见节点数 / 总节点数，当前可见边数 / 总边数
+
+**`NodeCard.tsx`**（React 客户端组件）：
+- 悬浮卡片，显示节点摘要信息
+- 内容：标题、类型标签、维度标签、一句话摘要
+- 操作：[查看 Wiki 页面]（跳转到 wiki 详情页）、[查看 Raw 文档]（跳转到 raw 详情页）
+- 定位：跟随鼠标，偏移 (15, 15) 避免遮挡
+
+### 新增组件清单
+
+| 组件 | 类型 | 文件 | 职责 |
+|------|------|------|------|
+| `HomeLayout.astro` | Astro 服务端 | `layouts/HomeLayout.astro` | 全局首页布局（无侧边栏，全宽） |
+| `ProjectCard.astro` | Astro 服务端 | `components/ProjectCard.astro` | 项目卡片（首页用） |
+| `ViewCard.astro` | Astro 服务端 | `components/ViewCard.astro` | 视图入口卡片（项目首页用） |
+| `DimensionBar.astro` | Astro 服务端 | `components/DimensionBar.astro` | 维度覆盖条形图（项目首页用） |
+| `RawDocMeta.astro` | Astro 服务端 | `components/RawDocMeta.astro` | Raw 文档来源信息卡片 |
+| `CrossReferences.astro` | Astro 服务端 | `components/CrossReferences.astro` | 交叉引用列表（wiki 详情页用） |
+| `SourceTraceability.astro` | Astro 服务端 | `components/SourceTraceability.astro` | 来源追溯链接（wiki 详情页用） |
+| `KnowledgeGraph.tsx` | React 客户端 | `components/KnowledgeGraph.tsx` | 力导向知识图谱 |
+| `GraphControls.tsx` | React 客户端 | `components/GraphControls.tsx` | 图谱控制面板 |
+| `NodeCard.tsx` | React 客户端 | `components/NodeCard.tsx` | 节点悬浮摘要卡片 |
+| `ProjectSwitcher.astro` | Astro 服务端 | `components/ProjectSwitcher.astro` | TopNav 中的项目切换下拉菜单 |
+
+### 复用现有组件
+
+| 组件 | 复用方式 |
+|------|---------|
+| `DocLayout.astro` | 所有非首页页面使用 |
+| `TopNav.astro` | 增加 ProjectSwitcher 插槽 |
+| `Sidebar.astro` | 根据当前视图（raw/wiki/graph）动态构建导航树 |
+| `SearchModal.tsx` | 扩展搜索范围覆盖 raw + wiki 集合 |
+| `SearchTrigger.tsx` | 不变 |
+| `TableOfContents.tsx` | raw 和 wiki 详情页使用 |
+| `Pagination.astro` | raw 和 wiki 详情页使用 |
+| `ReadingProgress.tsx` | raw 和 wiki 详情页使用 |
+| `ThemeToggle.tsx` | 不变 |
+| `KeyboardShortcuts.astro` | 不变 |
+| `mermaid-block.ts` | raw 详情页使用（raw 文档包含 Mermaid 图表） |
+
+### 搜索增强
+
+现有搜索只覆盖 `docs` 集合。增强后覆盖 `raw` + `wiki` 两个集合：
+
+```typescript
+// build-search-index.mjs 增强
+const rawDocs = await loadCollection('raw');
+const wikiDocs = await loadCollection('wiki');
+
+const index = [...rawDocs.map(d => ({
+  title: d.title,
+  description: d.description || '',
+  content: stripMarkdown(d.body),
+  section: `raw/${d.dimension}`,
+  href: `/projects/${d.project}/raw/${d.slug}`,
+  type: 'raw',
+})), ...wikiDocs.map(d => ({
+  title: d.title,
+  description: d.description || '',
+  content: stripMarkdown(d.body),
+  section: `wiki/${d.page_type}`,
+  href: `/projects/${d.project}/wiki/${d.slug}`,
+  type: 'wiki',
+}))];
+```
+
+搜索结果增加类型标签（raw/wiki）和维度/页面类型标签，帮助用户区分结果来源。
+
+### 站点完整目录结构
+
+```
+site/
+├── astro.config.mjs
+├── site.config.ts
+├── tailwind.config.mjs
+├── tsconfig.json
+├── package.json
+├── scripts/
+│   └── build-search-index.mjs           # 增强：覆盖 raw + wiki
+├── public/
+│   ├── favicon.svg
+│   ├── robots.txt
+│   ├── search-index.json                # 构建时生成
+│   └── graph.json                       # 构建时从 data/ 复制
+├── src/
+│   ├── content.config.ts                # 两个集合：raw + wiki
+│   ├── layouts/
+│   │   ├── DocLayout.astro              # 复用
+│   │   └── HomeLayout.astro             # 新增：全局首页布局
+│   ├── pages/
+│   │   ├── index.astro                  # 全局首页
+│   │   ├── projects/
+│   │   │   └── [project]/
+│   │   │       ├── index.astro          # 项目首页
+│   │   │       ├── raw/
+│   │   │       │   ├── index.astro      # Raw 总览
+│   │   │       │   └── [...slug].astro  # Raw 详情
+│   │   │       ├── wiki/
+│   │   │       │   ├── index.astro      # Wiki 总览
+│   │   │       │   └── [...slug].astro  # Wiki 详情
+│   │   │       └── graph.astro          # 知识图谱
+│   │   ├── search.astro                 # 全局搜索
+│   │   ├── sitemap.xml.astro
+│   │   └── 404.astro
+│   ├── components/
+│   │   ├── TopNav.astro                 # 增强：+ ProjectSwitcher
+│   │   ├── Sidebar.astro                # 增强：动态导航树
+│   │   ├── SearchModal.tsx              # 增强：raw + wiki 搜索
+│   │   ├── HomeLayout.astro             # 新增
+│   │   ├── ProjectCard.astro            # 新增
+│   │   ├── ViewCard.astro               # 新增
+│   │   ├── DimensionBar.astro           # 新增
+│   │   ├── RawDocMeta.astro             # 新增
+│   │   ├── CrossReferences.astro        # 新增
+│   │   ├── SourceTraceability.astro     # 新增
+│   │   ├── KnowledgeGraph.tsx           # 新增
+│   │   ├── GraphControls.tsx            # 新增
+│   │   ├── NodeCard.tsx                 # 新增
+│   │   ├── ProjectSwitcher.astro        # 新增
+│   │   ├── Pagination.astro             # 复用
+│   │   ├── TableOfContents.tsx          # 复用
+│   │   ├── ReadingProgress.tsx          # 复用
+│   │   ├── ThemeToggle.tsx              # 复用
+│   │   ├── SearchTrigger.tsx            # 复用
+│   │   ├── KeyboardShortcuts.astro      # 复用
+│   │   ├── Breadcrumb.astro             # 复用
+│   │   └── mermaid-block.ts             # 复用
+│   ├── lib/
+│   │   ├── rehype-callout.ts            # 复用
+│   │   └── remark-mermaid.mjs           # 复用
+│   └── styles/
+│       └── global.css                   # 增强：图谱样式、卡片样式
 ```
 
 ### Load Skills
@@ -292,7 +751,7 @@ site/
 ### 双模式运行
 
 - **插件模式**：用户通过 `/kb` 命令和 agent 在 Claude Code 中交互
-- **独立模式**：直接 `npm run dev` 或 `npm run build`；消费 `data/wiki/` 中的已有内容，不需要 Claude Code
+- **独立模式**：直接 `npm run dev` 或 `npm run build`；消费 `data/wiki/` + `data/raw/` 中的已有内容，不需要 Claude Code
 
 ---
 
