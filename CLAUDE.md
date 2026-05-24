@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-A Claude Code plugin marketplace (`harness-marketplace`) that distributes spec-driven development workflow tools. Users add the marketplace and install individual plugins. This repo contains the marketplace definition and all plugin source code.
+A Claude Code plugin marketplace (`harness-marketplace`) that distributes development workflow tools. Users add the marketplace and install individual plugins. This repo contains the marketplace definition and all plugin source code.
 
 ## Repo Structure
 
@@ -17,20 +17,15 @@ plugins/                           # All plugin packages live here
     commands/                      # Slash command definitions (markdown)
     rules/                         # Behavioral rules loaded into agent context
     skills/<skill-name>/SKILL.md   # Skill definitions with frontmatter + body
-    hooks/hooks.json               # Event hooks (e.g., auto-review on spec creation)
-template/                          # Document templates used by spec-workflow agents
-  init/                            # Project initialization templates
-  specs/                           # Spec document templates (requirements, PRD, design, etc.)
-  review/                          # Review templates and calibration examples
-  project/                         # Living doc templates (architecture, API, glossary, etc.)
+    hooks/hooks.json               # Event hooks
+obsolete/                          # Deprecated plugins kept for reference
 docs/                              # Superpowers specs and plans (internal, not shipped)
 ```
 
-## The Six Plugins
+## The Five Plugins
 
 | Plugin | Key Contents |
 |--------|-------------|
-| **spec-workflow** | 10 agents (planner, evaluator, requirements, prd, design, dev-plan, testing-plan, release-plan, review, doc), 7 rules, 8 commands, hooks, 12 skills (superpowers orchestrator, brainstorming, TDD, debugging, code review, design review, etc.) |
 | **analysis** | 5 skills (codebase-to-docs, system-architecture-analysis, deep-functional-analysis, source-functional-analysis, codebase-analysis), 2 agents, 3 commands, Astro-based docs site |
 | **coding** | Skills: write-skill, write-agent, write-command, skill-creator/audit/discovery, api-design, testing-patterns, browser-testing, agent-browser, ui-ux-pro-max, next-best-practices, git-workflow, sdk-development, mcp-builder, claude-ext-author |
 | **office** | Skills: xlsx, pdf, pptx, docx (each with Python scripts for document manipulation) |
@@ -48,7 +43,6 @@ First, add the marketplace:
 Then install individual plugins:
 
 ```bash
-/plugin install spec-workflow
 /plugin install analysis
 /plugin install coding
 /plugin install office
@@ -60,7 +54,7 @@ Then install individual plugins:
 
 ### Test a plugin locally
 ```bash
-claude --plugin-dir ./plugins/spec-workflow
+claude --plugin-dir ./plugins/<plugin-name>
 ```
 
 ### Validate the marketplace
@@ -76,18 +70,6 @@ npm run setup     # Symlink ../docs into site/
 npm run dev       # Astro dev server
 npm run build     # Build search index + static site
 ```
-
-## Architecture: Spec-Driven Workflow
-
-The core workflow follows a three-agent separation pattern:
-
-1. **Planner** expands a user prompt into a full product spec (requirements → PRD → design)
-2. **Generator** implements features in sprints against sprint contracts
-3. **Evaluator** tests and grades against concrete criteria, returning feedback to Generator
-
-Sprint contracts are negotiated before each work chunk. The evaluator uses a 0-100 scoring scale: Approved (80+), Approved with Conditions (60-79), Needs Iteration (40-59), Rejected (<40).
-
-The `superpowers` skill is the top-level router that dispatches to sub-skills based on development phase (brainstorming, debugging, TDD, code review, parallel implementation).
 
 ## Adding a New Plugin
 
@@ -105,11 +87,10 @@ Create `plugins/<plugin>/skills/<skill-name>/SKILL.md` with YAML frontmatter (`n
 
 - All plugin content is markdown — agents, commands, rules, and skills are `.md` files
 - Skills use `SKILL.md` as the entry point with YAML frontmatter (`name`, `description` fields minimum)
-- The spec-workflow hooks config (`plugins/spec-workflow/hooks/hooks.json`) auto-triggers review reminders when spec docs are written to `docs/specs/`
-- Document templates in `template/` follow the naming pattern `YYYY-MM-DD-<slug>` for dated specs
 - The analysis plugin's `.gitignore` excludes generated `docs/` and site build artifacts (`site/node_modules/`, `site/dist/`, `site/.astro/`)
 - **Version control (SemVer):** Every plugin change must update `version` in its `.claude-plugin/plugin.json`
   - **Patch** (`0.1.0` → `0.1.1`): bug fix, doc correction, minor adjustment that doesn't change functional behavior
   - **Minor** (`0.1.0` → `0.2.0`): new skill/agent/command/rule, feature enhancement, non-breaking changes
   - **Major** (`0.x.y` → `1.0.0`): breaking changes — removed skills, changed interfaces, incompatible config
 - **Changelog:** On every plugin content change, simultaneously: (1) update `plugin.json` version, (2) add entry under `[Unreleased]` in `CHANGELOG.md`; versions are finalized at release time; each plugin versions independently
+- **文档语言：** 所有文档（设计文档、spec、CHANGELOG、README 等）均使用中文编写
