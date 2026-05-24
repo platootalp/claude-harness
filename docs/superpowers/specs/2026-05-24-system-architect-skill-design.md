@@ -6,7 +6,7 @@ A new skill `system-architect` for the spec-workflow plugin. The AI acts as syst
 
 ## Iron Law
 
-**NO ARCHITECTURE WITHOUT A VALIDATED PRD.** The architect consumes functional requirements; it does not create them. Architecture decisions must trace back to specific PRD requirements.
+**NO ARCHITECTURE WITHOUT A VALIDATED PRD.** The architect consumes functional requirements; it does not create them. Architecture decisions must trace back to specific PRD requirements. "Validated" means the PRD has been reviewed and approved by the user — the skill asks the user to confirm the PRD is ready before proceeding.
 
 ## Responsibility Boundaries
 
