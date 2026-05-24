@@ -27,8 +27,8 @@ Zooms into the system, showing the high-level containers (applications, data sto
 ```mermaid
 graph TB
     subgraph System["System Under Design"]
-        WebApp[Web Application] --> API[API Server]
-        API --> Worker[Background Worker]
+        WebApp["Web Application\n(React SPA)"] --> API["API Server\n(Go / Node.js)"]
+        API --> Worker["Background Worker\n(Async processor)"]
         API --> DB[(Database)]
         Worker --> Cache[(Cache)]
     end

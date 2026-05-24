@@ -66,6 +66,16 @@ For each external system integration:
 | **Event Stream** | Publish/subscribe to event topics | High-volume, multiple consumers, need replay capability |
 | **Batch ETL** | Scheduled extract-transform-load jobs | Large datasets, acceptable latency (hours), data warehousing |
 
+### Data Synchronization Flow
+
+```mermaid
+flowchart LR
+    Source[Source System] -->|Change Event| Sync[Sync Layer]
+    Sync -->|Transform| Target[Target System]
+    Sync -->|Log| Audit[(Audit Log)]
+    Target -->|Confirm| Monitor[Sync Monitor]
+```
+
 ### Consistency Across Systems
 
 - **Source of truth:** Define which system owns each data entity. Other systems hold projections or cached copies.
@@ -76,14 +86,19 @@ For each external system integration:
 
 ### Circuit Breaker Pattern
 
+```mermaid
+stateDiagram-v2
+    [*] --> Closed
+    Closed --> Open : Failure threshold reached
+    Open --> HalfOpen : Timeout elapsed
+    HalfOpen --> Closed : Success
+    HalfOpen --> Open : Failure
 ```
-States: CLOSED (normal) → OPEN (failing) → HALF-OPEN (testing recovery)
 
 Configuration:
 - Failure threshold: N failures in M seconds → open circuit
 - Open duration: wait before testing recovery
 - Half-open: allow 1 request through; if success → close, if fail → stay open
-```
 
 ### Fallback Strategies
 

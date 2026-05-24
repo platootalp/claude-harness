@@ -103,7 +103,7 @@ Patterns:
 | Write-through | Cannot tolerate stale reads | Cache updated synchronously on write |
 | Write-behind | Write-heavy, can tolerate brief inconsistency | Writes buffered, flushed asynchronously |
 
-## Data Consistency
+## Data Consistency Approach
 
 ### Consistency Models
 
