@@ -1,9 +1,0 @@
-{
-  "name": "spec-workflow",
-  "version": "0.1.0",
-  "description": "Spec-driven development workflow: agents, rules, hooks, commands, and review skills for structured software development",
-  "author": {
-    "name": "platootalp"
-  },
-  "license": "MIT"
-}

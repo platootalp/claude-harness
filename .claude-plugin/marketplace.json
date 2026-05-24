@@ -6,11 +6,6 @@
   },
   "plugins": [
     {
-      "name": "spec-workflow",
-      "source": "./plugins/spec-workflow",
-      "description": "Spec-driven development workflow: agents, rules, hooks, commands, and review skills"
-    },
-    {
       "name": "analysis",
       "source": "./plugins/analysis",
       "description": "Codebase analysis and architecture analysis skills"
@@ -34,6 +29,11 @@
       "name": "wiki",
       "source": "./plugins/wiki",
       "description": "LLM-maintained personal knowledge base — ingest sources, query the wiki, lint for consistency"
+    },
+    {
+      "name": "superpowers-pro",
+      "source": "./plugins/superpowers-pro",
+      "description": "Structured development workflows for coding agents — feature development, debugging, code review, and more"
     }
   ]
 }
