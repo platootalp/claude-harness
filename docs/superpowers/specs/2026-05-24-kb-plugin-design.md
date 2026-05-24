@@ -54,7 +54,7 @@ Extract（代码库分析）→ Transform（结构化知识）→ Load/Present�
 | `extract-topology` | topology | 模块内部结构、职责边界、上下游交互方式 | `data/raw/<project>/topology/` |
 | `extract-api` | api | 完整 API 契约、参数、返回值、错误处理、调用示例 | `data/raw/<project>/api/` |
 | `extract-data-model` | data-model | 实体 schema、关系、约束、状态机、访问模式 | `data/raw/<project>/data-model/` |
-| `extract-flows` | flows | 端到端路径、分支、异常处理、性能特征 | `data/raw/<project>/flows/` |
+| `extract-flows` | flows | 业务流程与功能层次：识别核心业务场景，提取每个场景的端到端流程、功能分解、层次关系、触发条件、异常分支 | `data/raw/<project>/flows/` |
 | `extract-concepts` | concepts | 领域概念定义、代码映射、概念间关系 | `data/raw/<project>/concepts/` |
 
 **路由 skill**：`extract`——分发到具体维度 skill；支持 `--all` 全量提取。
@@ -86,8 +86,9 @@ data/raw/<project>/
 │       └── <state-entity>.md
 ├── flows/
 │   ├── _index.md
-│   ├── <flow-a>.md
-│   └── <flow-b>.md
+│   ├── <flow-a>.md                   # 端到端业务流程
+│   ├── <flow-b>.md
+│   └── <flow-c>.md                   # 每个流程包含功能分解和层次关系
 └── concepts/
     ├── _index.md
     ├── terms.md
@@ -125,7 +126,7 @@ tags: [plugins, marketplace]
 | `codebase-analysis` | `extract`（路由） | 重命名，管道感知 |
 | `codebase-to-docs` | 拆分为 `extract-topology` + `extract-flows` | 双轴（架构 + 流程）拆为两个独立 skill |
 | `system-architecture-analysis` | 合入 `extract-topology` | C4 模型成为 topology 的子模板 |
-| `source-functional-analysis` | `extract-flows` | 重命名，产出格式对齐 |
+| `source-functional-analysis` | `extract-flows` | 重命名，聚焦业务流程与功能层次分析 |
 | `deep-functional-analysis` | `extract-topology`（深度模块分析） | 作为 topology 的逐模块深度分析 |
 | （无） | `extract-api` | 新增 |
 | （无） | `extract-data-model` | 新增 |
@@ -801,7 +802,7 @@ plugins/kb/
 │   ├── extract-flows/
 │   │   ├── SKILL.md
 │   │   └── templates/
-│   │       └── flows.md
+│   │       └── flows.md                  # 必含章节：业务场景、功能分解、层次关系、流程路径、异常分支
 │   ├── extract-concepts/
 │   │   ├── SKILL.md
 │   │   └── templates/
