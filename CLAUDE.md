@@ -10,87 +10,91 @@ A Claude Code plugin marketplace (`harness-marketplace`) that distributes develo
 
 ```
 .claude-plugin/marketplace.json   # Marketplace registry — lists all plugins with name + source path
-plugins/                           # All plugin packages live here
-  <plugin-name>/
+plugins/                           # Active plugin packages
+  superpowers-pro/                 # The only currently active plugin
     .claude-plugin/plugin.json     # Plugin manifest (name, version, description, author, license)
-    agents/                        # Subagent definitions (markdown)
-    commands/                      # Slash command definitions (markdown)
-    rules/                         # Behavioral rules loaded into agent context
     skills/<skill-name>/SKILL.md   # Skill definitions with frontmatter + body
-    hooks/hooks.json               # Event hooks
-obsolete/                          # Deprecated plugins kept for reference
-docs/                              # Superpowers specs and plans (internal, not shipped)
+    hooks/                         # Session-start hook (injects using-superpowers skill on startup)
+other/                             # Previously removed plugins kept for reference
+  analysis/                        # Codebase analysis skills + Astro docs site + embedded office plugin
+  coding/                          # Coding, testing, and skill-authoring skills (22 total)
+  wiki/                            # Wiki ingest/query/lint skills + raw wiki data
+docs/                              # Internal specs and plans (not shipped)
+  superpowers/plans/               # Implementation plans
+  superpowers/specs/               # Design specs
 ```
 
-## The Five Plugins
+## Marketplace Registry
 
-| Plugin | Key Contents |
-|--------|-------------|
-| **analysis** | 5 skills (codebase-to-docs, system-architecture-analysis, deep-functional-analysis, source-functional-analysis, codebase-analysis), 2 agents, 3 commands, Astro-based docs site |
-| **coding** | Skills: write-skill, write-agent, write-command, skill-creator/audit/discovery, api-design, testing-patterns, browser-testing, agent-browser, ui-ux-pro-max, next-best-practices, git-workflow, sdk-development, mcp-builder, claude-ext-author |
-| **office** | Skills: xlsx, pdf, pptx, docx (each with Python scripts for document manipulation) |
-| **interview** | Skills: project-resume (with evals and template) |
-| **wiki** | Skills: wiki-ingest, wiki-query, wiki-lint. Agent: wiki-maintainer. Rule: wiki-schema. Raw sources and LLM-maintained wiki pages for AI coding tools (Claude Code, Cursor, Codex, OpenCode, Plugin Builder) |
+`marketplace.json` 注册了 6 个插件，但实际目录状态不一致：
 
-## Installing Plugins
+| Plugin | marketplace.json source | 实际位置 | 状态 |
+|--------|------------------------|---------|------|
+| **superpowers-pro** | `./plugins/superpowers-pro` | `plugins/superpowers-pro/` | 活跃 |
+| **analysis** | `./plugins/analysis` | `other/analysis/` | 已移出，source 路径失效 |
+| **coding** | `./plugins/coding` | `other/coding/` | 已移出，source 路径失效 |
+| **office** | `./plugins/office` | `other/analysis/office/` | 已移出，source 路径失效 |
+| **interview** | `./plugins/interview` | 不存在 | 已移出，无目录 |
+| **wiki** | `./plugins/wiki` | `other/wiki/` | 已移出，source 路径失效 |
 
-First, add the marketplace:
+修改 marketplace.json 或移动插件目录时，必须保持两者一致。
 
-```bash
-/plugin marketplace add platootalp/claude-harness
-```
+## Active Plugin: superpowers-pro
 
-Then install individual plugins:
+`plugins/` 下唯一的活跃插件。15 skills 覆盖结构化开发工作流：
 
-```bash
-/plugin install analysis
-/plugin install coding
-/plugin install office
-/plugin install interview
-/plugin install wiki
-```
+| Category | Skills |
+|----------|--------|
+| Workflow entry | using-superpowers (injected on session start), brainstorming |
+| Planning | writing-plans, executing-plans, system-architect |
+| Development | test-driven-development, subagent-driven-development |
+| Git | using-git-worktrees, finishing-a-development-branch |
+| Review | requesting-code-review, receiving-code-review |
+| Debugging | systematic-debugging |
+| Meta | writing-skills, dispatching-parallel-agents, verification-before-completion |
+
+The `session-start` hook automatically injects `using-superpowers` SKILL.md content into agent context, establishing skill discovery behavior for every session.
+
+## Inactive Plugins (other/)
+
+已从 `plugins/` 移出但保留源码的旧插件：
+
+- **analysis** (v0.2.0) — 5 skills, 2 agents, 3 commands, Astro docs site；内嵌 office 插件
+- **coding** (v0.1.0) — 22 skills（含 skill-creator 评估工具链、ui-ux-pro-max 设计数据）
+- **wiki** (v0.1.0) — 3 skills, 1 agent, 三层 wiki 架构（raw sources → wiki pages → query）
 
 ## Development Commands
 
-### Test a plugin locally
 ```bash
-claude --plugin-dir ./plugins/<plugin-name>
-```
+# Test a plugin locally
+claude --plugin-dir ./plugins/superpowers-pro
 
-### Validate the marketplace
-```bash
+# Validate the marketplace
 claude plugin validate .
+
+# Analysis docs site (in other/analysis/)
+cd other/analysis/site && npm install && npm run setup && npm run dev
 ```
 
-### Analysis plugin docs site
-```bash
-cd plugins/analysis/site
-npm install
-npm run setup     # Symlink ../docs into site/
-npm run dev       # Astro dev server
-npm run build     # Build search index + static site
-```
+## Adding a Skill to superpowers-pro
+
+Create `plugins/superpowers-pro/skills/<skill-name>/SKILL.md` with YAML frontmatter (`name`, `description`) and markdown body. Skills can include `references/`, `templates/`, `scripts/`, and `evals/` subdirectories.
 
 ## Adding a New Plugin
 
-1. Create `plugins/<name>/` directory with `.claude-plugin/plugin.json`
-2. Add skills to `plugins/<name>/skills/<skill-name>/SKILL.md`
-3. Optionally add agents, commands, rules, hooks subdirectories
-4. Register in `.claude-plugin/marketplace.json` under `plugins` array
-5. Validate: `claude plugin validate .`
-
-## Adding a Skill to an Existing Plugin
-
-Create `plugins/<plugin>/skills/<skill-name>/SKILL.md` with YAML frontmatter (`name`, `description`) and markdown body. Skills can include `references/`, `templates/`, `scripts/`, and `evals/` subdirectories for supporting content.
+1. Create `plugins/<name>/` with `.claude-plugin/plugin.json`
+2. Add skills to `plugins/<name>/skills/`
+3. Register in `.claude-plugin/marketplace.json` under `plugins` array
+4. Validate: `claude plugin validate .`
 
 ## Key Conventions
 
 - All plugin content is markdown — agents, commands, rules, and skills are `.md` files
 - Skills use `SKILL.md` as the entry point with YAML frontmatter (`name`, `description` fields minimum)
-- The analysis plugin's `.gitignore` excludes generated `docs/` and site build artifacts (`site/node_modules/`, `site/dist/`, `site/.astro/`)
-- **Version control (SemVer):** Every plugin change must update `version` in its `.claude-plugin/plugin.json`
-  - **Patch** (`0.1.0` → `0.1.1`): bug fix, doc correction, minor adjustment that doesn't change functional behavior
-  - **Minor** (`0.1.0` → `0.2.0`): new skill/agent/command/rule, feature enhancement, non-breaking changes
-  - **Major** (`0.x.y` → `1.0.0`): breaking changes — removed skills, changed interfaces, incompatible config
-- **Changelog:** On every plugin content change, simultaneously: (1) update `plugin.json` version, (2) add entry under `[Unreleased]` in `CHANGELOG.md`; versions are finalized at release time; each plugin versions independently
 - **文档语言：** 所有文档（设计文档、spec、CHANGELOG、README 等）均使用中文编写
+- **Version control (SemVer):** Every plugin change must update `version` in `.claude-plugin/plugin.json`
+  - **Patch**: bug fix, doc correction, minor adjustment
+  - **Minor**: new skill/agent/command/rule, feature enhancement
+  - **Major**: breaking changes
+- **Changelog:** On every plugin content change, simultaneously: (1) update `plugin.json` version, (2) add entry under `[Unreleased]` in the plugin's `CHANGELOG.md`; each plugin versions independently
+- **Worktree isolation:** 所有功能开发使用隔离 worktree，测试通过后合并到主分支
