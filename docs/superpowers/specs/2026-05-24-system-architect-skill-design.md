@@ -2,7 +2,7 @@
 
 ## Overview
 
-A new skill `system-architect` for the spec-workflow plugin. The AI acts as system architect for 0→1 projects — consuming a PRD as input, producing a comprehensive architecture design document covering application, data, infrastructure, and integration dimensions.
+A new skill `system-architect` for the superpowers-pro plugin. The AI acts as system architect for 0→1 projects — consuming a PRD as input, producing a comprehensive architecture design document covering application, data, infrastructure, and integration dimensions.
 
 ## Iron Law
 
@@ -89,7 +89,7 @@ Designed in dependency order — each dimension builds on the previous:
 ## File Structure
 
 ```
-plugins/spec-workflow/skills/system-architect/
+plugins/superpowers-pro/skills/system-architect/
   SKILL.md                              # Main skill definition (process, iron law, checklist)
   references/
     application-architecture.md          # Application architecture guide (C4 templates, service decomposition methods)
@@ -142,41 +142,31 @@ Single architecture design document at `docs/specs/YYYY-MM-DD-<project>-architec
 ## 7. Risk Register
 ```
 
-C4 diagrams use Mermaid (consistent with `system-architecture-analysis` skill):
+C4 diagrams use Mermaid:
 - Context: `graph LR` or `flowchart LR`
 - Container: `graph TB`
 - Component: `graph TB`
 - Data flow: `flowchart LR`
 
-## Integration with Existing Skills
+## Integration with Superpowers-Pro
 
-### Position in spec-workflow pipeline
+### Position in the development pipeline
 
 ```
 brainstorming → PRD → system-architect → dev-plan → implementation
 ```
 
-`system-architect` sits **after PRD, before dev-plan**. It consumes PRD output and produces architecture documentation that feeds into the `dev-plan` skill.
+`system-architect` sits **after PRD, before dev-plan**. It consumes PRD output and produces architecture documentation that feeds into downstream development planning.
 
-### Relationships
+### Superpowers router integration
 
-| Existing Skill | Relationship |
-|---------------|-------------|
-| `brainstorming` | Upstream — brainstorming may produce the PRD that feeds this skill |
-| `dev-plan-review` | Downstream — reviews development plans based on this skill's architecture output |
-| `system-architecture-analysis` (analysis plugin) | Complementary — that skill **analyzes existing** codebase architecture; this skill **designs new** architecture from scratch |
-| `codebase-to-docs` (analysis plugin) | Complementary — that generates docs from code; this generates architecture from requirements |
-| `using-superpowers` (superpowers-pro) | Integration — superpowers router should route to this skill when architecture design is needed |
-
-### Superpowers router extension
-
-Add routing condition to `using-superpowers`:
-- When user is past PRD phase and needs system-level architecture design → route to `system-architect`
-- Trigger phrases: "design architecture", "system architecture", "architect from scratch", "architecture design"
+The `using-superpowers` router should route to `system-architect` when:
+- User is past PRD phase and needs system-level architecture design
+- Trigger phrases: "design architecture", "system architecture", "architect from scratch", "architecture design", "架构设计", "系统架构"
 
 ### Explicit Non-Goals
 
 - Does NOT design functional architecture (product responsibility)
 - Does NOT produce code-level detailed design (dev-plan responsibility)
-- Does NOT analyze existing system architecture (system-architecture-analysis responsibility)
-- Does NOT teach microservice decomposition methodology in isolation (only applies it in real projects)
+- Does NOT analyze existing system architecture (use analysis tools for that)
+- Does NOT teach architecture methodology in isolation (only applies it in real projects)
