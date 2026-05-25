@@ -111,6 +111,7 @@ cp other/analysis/site/public/robots.txt plugins/kb/site/public/
 mkdir -p plugins/kb/site/src/lib
 cp other/analysis/site/src/lib/rehype-callout.ts plugins/kb/site/src/lib/
 cp other/analysis/site/src/lib/remark-mermaid.mjs plugins/kb/site/src/lib/
+mkdir -p plugins/kb/site/src/styles
 cp other/analysis/site/src/styles/global.css plugins/kb/site/src/styles/global.css 2>/dev/null || true
 ```
 
@@ -1058,7 +1059,7 @@ git commit -m "feat(kb): 知识图谱 — KnowledgeGraph + GraphControls + NodeC
 
 ---
 
-## Task 8: 构建脚本 + serve skill
+## Task 8: 构建脚本 + serve 技能
 
 **Files:**
 - Create: `plugins/kb/site/scripts/build-search-index.mjs`
@@ -1084,10 +1085,14 @@ git commit -m "feat(kb): 知识图谱 — KnowledgeGraph + GraphControls + NodeC
 ```markdown
 ---
 name: serve
-description: 构建 Astro 站点并启动预览服务器。
+description: 当需要构建知识库站点并启动预览服务器时使用。串联搜索索引构建、图谱数据构建、Astro 构建和预览服务。
 ---
 
 # Serve — 构建与预览
+
+<HARD-GATE>
+`data/wiki/` 下必须有内容（至少一个项目的 wiki 页面），否则站点为空。
+</HARD-GATE>
 
 ## 执行流程
 
@@ -1100,13 +1105,71 @@ description: 构建 Astro 站点并启动预览服务器。
 
 ## 用法
 
-- `serve --port <port>`：指定端口（默认 4321）
-- `serve --build-only`：只构建，不启动预览
+| 参数 | 说明 |
+|------|------|
+| `--port <port>` | 指定端口（默认 4321） |
+| `--build-only` | 只构建，不启动预览 |
+
+## 反模式
+
+| 想法 | 问题 |
+|------|------|
+| "直接 `astro dev` 就行" | dev 模式不执行搜索索引和图谱数据构建，站点功能不完整 |
+| "跳过 setup 步骤" | 没有符号链接，Astro 的 content collection 找不到数据目录 |
+| "构建失败就重试" | 构建失败通常是数据问题（frontmatter 缺失、路径错误），必须先修复数据 |
+
+## 关键原则
+
+- **构建管线不可跳步：** setup → install → build:index → build:graph → build → preview
+- **数据优先：** 站点只是展示层，数据质量决定站点质量
+- **构建失败看数据：** 90% 的构建失败是 frontmatter 或路径问题
 ```
 
 - [ ] **Step 4: 创建 build-search-index 和 build-graph 的 SKILL.md**
 
-两个内部 skill，文档说明各自职责和执行方式，用户不直接调用。
+两个内部技能，文档说明各自职责和执行方式，用户不直接调用。
+
+```markdown
+---
+name: build-search-index
+description: 内部技能——从 raw + wiki 内容构建 Fuse.js 搜索索引。由 serve 技能自动调用，用户不直接使用。
+---
+
+# Build Search Index — 搜索索引构建
+
+从 `data-raw/` 和 `data-wiki/` 读取 markdown，解析 frontmatter，提取标题和正文，写入 `public/search-index.json`。
+
+## 执行
+
+```bash
+node scripts/build-search-index.mjs
+```
+
+## 输出
+
+`public/search-index.json`——Fuse.js 兼容的搜索索引，包含 raw 和 wiki 两个来源的条目。
+```
+
+```markdown
+---
+name: build-graph
+description: 内部技能——从 wiki 页面提取交叉引用，构建图谱数据供力导向图消费。由 serve 技能自动调用，用户不直接使用。
+---
+
+# Build Graph — 图谱数据构建
+
+从 `data-wiki/projects/` 下的 wiki 页面提取交叉引用关系，构建 `graph.json`（nodes + edges），写入 `public/graph.json`。
+
+## 执行
+
+```bash
+node scripts/build-graph-data.mjs
+```
+
+## 输出
+
+`public/graph.json`——包含 nodes（每个 wiki 页面一个节点）和 edges（从"另见"章节解析的链接对）。
+```
 
 - [ ] **Step 5: 提交**
 
