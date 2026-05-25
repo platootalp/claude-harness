@@ -10,6 +10,7 @@ const WIKI_ROOT = resolve(__dirname, '../../data-wiki');
 const raw = defineCollection({
   loader: glob({ pattern: '**/*.md', base: RAW_ROOT, ignore: ['**/_map.md'] }),
   schema: z.object({
+    title: z.string().optional(),
     project: z.string().optional(),
     dimension: z.enum(['topology', 'api', 'data-model', 'flows', 'concepts']).optional(),
     date: z.string().optional(),

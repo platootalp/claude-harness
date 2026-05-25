@@ -1,0 +1,45 @@
+---
+import DocLayout from '../../../layouts/DocLayout.astro';
+import RawDocMeta from '../../../components/RawDocMeta.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const allRaw = await getCollection('raw');
+
+  return allRaw.map(entry => {
+    const parts = entry.id.split('/');
+    const project = parts[0];
+    const slug = parts.slice(1).join('/').replace(/\.md$/, '');
+
+    return {
+      params: { project, slug },
+      props: { entry },
+    };
+  });
+}
+
+const { project, slug } = Astro.params;
+if (!project || !slug) return Astro.redirect('/');
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const { data } = entry;
+
+const title = data.title || slug;
+---
+<DocLayout title={`${title} — ${project} Raw`}>
+  <div class="space-y-6">
+    <section>
+      <div class="flex items-center gap-3">
+        <a href={`/projects/${project}/raw/`} class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)]">← 返回 Raw 文档</a>
+      </div>
+      <h1 class="mt-4 text-3xl font-bold">{title}</h1>
+      <div class="mt-3">
+        <RawDocMeta dimension={data.dimension} status={data.status} date={data.date} tags={data.tags} />
+      </div>
+    </section>
+    <article class="prose prose-sm dark:prose-invert max-w-none">
+      <Content />
+    </article>
+  </div>
+</DocLayout>

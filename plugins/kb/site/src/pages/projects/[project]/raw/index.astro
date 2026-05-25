@@ -1,0 +1,78 @@
+---
+import DocLayout from '../../../layouts/DocLayout.astro';
+import RawDocMeta from '../../../components/RawDocMeta.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const allRaw = await getCollection('raw');
+  const projects = [...new Set(allRaw.map(e => {
+    const parts = e.id.split('/');
+    return parts[0];
+  }))];
+
+  return projects.map(project => ({
+    params: { project },
+  }));
+}
+
+const { project } = Astro.params;
+if (!project) return Astro.redirect('/');
+
+// Read raw documents from content collection
+const allRaw = await getCollection('raw');
+const projectDocs = allRaw.filter(entry => entry.id.startsWith(`${project}/`));
+
+// Group by dimension
+const byDimension: Record<string, typeof projectDocs> = {};
+for (const doc of projectDocs) {
+  const dim = doc.data.dimension || 'other';
+  if (!byDimension[dim]) byDimension[dim] = [];
+  byDimension[dim].push(doc);
+}
+
+const dimensionLabels: Record<string, string> = {
+  topology: '拓扑',
+  api: 'API',
+  'data-model': '数据模型',
+  flows: '流程',
+  concepts: '概念',
+  other: '其他',
+};
+---
+<DocLayout title={`Raw 文档 — ${project}`}>
+  <div class="space-y-8">
+    <section>
+      <div class="flex items-center gap-3">
+        <a href={`/projects/${project}/`} class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)]">← 返回项目</a>
+      </div>
+      <h1 class="mt-4 text-3xl font-bold">Raw 文档</h1>
+      <p class="mt-2 text-[var(--color-text-muted)]">原始提取产出 — 按维度分组</p>
+    </section>
+
+    {Object.entries(byDimension).length === 0 ? (
+      <p class="text-[var(--color-text-muted)]">暂无 raw 文档。运行 <code class="rounded bg-[var(--color-bg-secondary)] px-1 py-0.5 text-sm">/kb extract</code> 开始提取。</p>
+    ) : (
+      Object.entries(byDimension).map(([dim, docs]) => (
+        <section>
+          <h2 class="mb-4 text-xl font-semibold">{dimensionLabels[dim] || dim}</h2>
+          <div class="space-y-3">
+            {docs.map(doc => {
+              const slug = doc.id.replace(/\.md$/, '');
+              return (
+                <a href={`/projects/${project}/raw/${slug}`} class="block rounded border border-[var(--color-border)] p-4 transition hover:border-[var(--color-accent)]">
+                  <h3 class="font-medium">{doc.data.title || doc.id}</h3>
+                  <RawDocMeta
+                    dimension={doc.data.dimension}
+                    status={doc.data.status}
+                    date={doc.data.date}
+                    tags={doc.data.tags}
+                  />
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      ))
+    )}
+  </div>
+</DocLayout>

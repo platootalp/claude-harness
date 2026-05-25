@@ -1,0 +1,43 @@
+---
+interface Props {
+  dimension?: string;
+  status?: string;
+  date?: string;
+  tags?: string[];
+}
+
+const { dimension, status, date, tags = [] } = Astro.props;
+
+const dimensionLabels: Record<string, string> = {
+  topology: '拓扑',
+  api: 'API',
+  'data-model': '数据模型',
+  flows: '流程',
+  concepts: '概念',
+};
+
+const statusStyles: Record<string, string> = {
+  unprocessed: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  processed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+};
+---
+<div class="flex flex-wrap items-center gap-2 text-sm">
+  {dimension && (
+    <span class="rounded-full bg-[var(--color-bg-secondary)] px-2 py-0.5 text-xs">
+      {dimensionLabels[dimension] || dimension}
+    </span>
+  )}
+  {status && (
+    <span class:list={['rounded-full px-2 py-0.5 text-xs', statusStyles[status] || 'bg-gray-100 text-gray-600']}>
+      {status === 'processed' ? '已处理' : status === 'unprocessed' ? '未处理' : status}
+    </span>
+  )}
+  {date && <span class="text-[var(--color-text-muted)]">{date}</span>}
+  {tags.length > 0 && (
+    <div class="flex gap-1">
+      {tags.map(t => (
+        <span class="rounded bg-[var(--color-bg-secondary)] px-1.5 py-0.5 text-xs text-[var(--color-text-muted)]">#{t}</span>
+      ))}
+    </div>
+  )}
+</div>
