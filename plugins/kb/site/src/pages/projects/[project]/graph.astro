@@ -1,0 +1,21 @@
+---
+import DocLayout from '../../../layouts/DocLayout.astro';
+import KnowledgeGraph from '../../../components/KnowledgeGraph.tsx';
+
+const { project } = Astro.params;
+if (!project) return Astro.redirect('/');
+
+const title = `知识图谱 — ${project}`;
+---
+<DocLayout title={title}>
+  <div class="space-y-4">
+    <section>
+      <div class="flex items-center gap-3">
+        <a href={`/projects/${project}/`} class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)]">← 返回项目</a>
+      </div>
+      <h1 class="mt-4 text-3xl font-bold">知识图谱</h1>
+      <p class="mt-2 text-[var(--color-text-muted)]">交互式关系图谱 — 实体和概念的可视化</p>
+    </section>
+    <KnowledgeGraph client:load />
+  </div>
+</DocLayout>
