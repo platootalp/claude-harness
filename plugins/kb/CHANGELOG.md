@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- cross-ref skill：跨文档关联与综合，发现跨维度/跨模块关联，建立双向链接，生成综合分析页面
 - transform 路由 skill：解析用户意图，分发到 ingest / cross-ref 技能
 - wiki 数据目录：index.md、overview.md、log.md、projects/.gitkeep
 
