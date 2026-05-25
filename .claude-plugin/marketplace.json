@@ -6,31 +6,6 @@
   },
   "plugins": [
     {
-      "name": "analysis",
-      "source": "./plugins/analysis",
-      "description": "Codebase analysis and architecture analysis skills"
-    },
-    {
-      "name": "coding",
-      "source": "./plugins/coding",
-      "description": "Coding, testing, and skill-building skills"
-    },
-    {
-      "name": "office",
-      "source": "./plugins/office",
-      "description": "Office document handling skills"
-    },
-    {
-      "name": "interview",
-      "source": "./plugins/interview",
-      "description": "Technical interview preparation skills"
-    },
-    {
-      "name": "wiki",
-      "source": "./plugins/wiki",
-      "description": "LLM-maintained personal knowledge base — ingest sources, query the wiki, lint for consistency"
-    },
-    {
       "name": "superpowers-pro",
       "source": "./plugins/superpowers-pro",
       "description": "Structured development workflows for coding agents — feature development, debugging, code review, and more"

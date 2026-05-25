@@ -11,10 +11,16 @@ A Claude Code plugin marketplace (`harness-marketplace`) that distributes develo
 ```
 .claude-plugin/marketplace.json   # Marketplace registry — lists all plugins with name + source path
 plugins/                           # Active plugin packages
-  superpowers-pro/                 # The only currently active plugin
+  superpowers-pro/                 # Structured development workflows
     .claude-plugin/plugin.json     # Plugin manifest (name, version, description, author, license)
     skills/<skill-name>/SKILL.md   # Skill definitions with frontmatter + body
     hooks/                         # Session-start hook (injects using-superpowers skill on startup)
+  kb/                              # Knowledge base management (ETL pipeline)
+    .claude-plugin/plugin.json
+    agents/                        # extract-agent, kb-agent, transform-agent
+    commands/                      # /kb command
+    skills/                        # 15 skills (scan, extract-*, transform, ingest, etc.)
+    site/                          # Astro 6 + React 18 + d3-force + Fuse.js
 other/                             # Previously removed plugins kept for reference
   analysis/                        # Codebase analysis skills + Astro docs site + embedded office plugin
   coding/                          # Coding, testing, and skill-authoring skills (22 total)
@@ -26,19 +32,14 @@ docs/                              # Internal specs and plans (not shipped)
 
 ## Marketplace Registry
 
-`marketplace.json` 注册了 7 个插件，kb 为新增活跃插件：
+`marketplace.json` 注册 2 个活跃插件：
 
-| Plugin | marketplace.json source | 实际位置 | 状态 |
-|--------|------------------------|---------|------|
-| **superpowers-pro** | `./plugins/superpowers-pro` | `plugins/superpowers-pro/` | 活跃 |
-| **kb** | `./plugins/kb` | `plugins/kb/` | 活跃 |
-| **analysis** | `./plugins/analysis` | `other/analysis/` | 已移出，source 路径失效 |
-| **coding** | `./plugins/coding` | `other/coding/` | 已移出，source 路径失效 |
-| **office** | `./plugins/office` | `other/analysis/office/` | 已移出，source 路径失效 |
-| **interview** | `./plugins/interview` | 不存在 | 已移出，无目录 |
-| **wiki** | `./plugins/wiki` | `other/wiki/` | 已移出，source 路径失效 |
+| Plugin | marketplace.json source | 状态 |
+|--------|------------------------|------|
+| **superpowers-pro** | `./plugins/superpowers-pro` | 活跃 |
+| **kb** | `./plugins/kb` | 活跃 |
 
-修改 marketplace.json 或移动插件目录时，必须保持两者一致。
+旧插件（analysis, coding, office, interview, wiki）已移至 `other/` 保留源码，但未在 marketplace 注册。修改 marketplace.json 或移动插件目录时，必须保持两者一致。
 
 ## Active Plugin: superpowers-pro
 
@@ -72,11 +73,13 @@ The `session-start` hook automatically injects `using-superpowers` SKILL.md cont
 
 ## Inactive Plugins (other/)
 
-已从 `plugins/` 移出但保留源码的旧插件：
+已从 marketplace 移除但保留源码的旧插件，位于 `other/`：
 
 - **analysis** (v0.2.0) — 5 skills, 2 agents, 3 commands, Astro docs site；内嵌 office 插件
 - **coding** (v0.1.0) — 22 skills（含 skill-creator 评估工具链、ui-ux-pro-max 设计数据）
 - **wiki** (v0.1.0) — 3 skills, 1 agent, 三层 wiki 架构（raw sources → wiki pages → query）
+
+这些插件未在 marketplace.json 注册，仅作参考保留。
 
 ## Development Commands
 

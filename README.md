@@ -1,6 +1,6 @@
 # Harness Marketplace
 
-A Claude Code plugin marketplace for spec-driven development workflows.
+A Claude Code plugin marketplace for structured development workflows and knowledge management.
 
 ## Quick Start
 
@@ -9,41 +9,42 @@ A Claude Code plugin marketplace for spec-driven development workflows.
 /plugin marketplace add https://github.com/platootalp/harness-marketplace
 
 # Install the core workflow plugin
-/plugin install spec-workflow@harness-marketplace
+/plugin install superpowers-pro@harness-marketplace
 
-# Install additional plugins as needed
-/plugin install coding@harness-marketplace
-/plugin install analysis@harness-marketplace
+# Install the knowledge base plugin
+/plugin install kb@harness-marketplace
 ```
 
 ## Available Plugins
 
-### spec-workflow
-Spec-driven development workflow with agents, rules, hooks, commands, and review skills.
+### superpowers-pro
+Structured development workflows for coding agents — feature development, debugging, code review, and more.
 
-Includes 10 agents (planner, evaluator, requirements, PRD, design, dev-plan, testing-plan, release-plan, review, doc), 7 rules, hooks, 8 commands, and workflow skills (review, create-rule, debug-claude-hooks, superpowers).
+15 skills covering the full development lifecycle:
+- **Workflow entry:** using-superpowers (auto-injected on session start), brainstorming
+- **Planning:** writing-plans, executing-plans, system-architect
+- **Development:** test-driven-development, subagent-driven-development
+- **Git:** using-git-worktrees, finishing-a-development-branch
+- **Review:** requesting-code-review, receiving-code-review
+- **Debugging:** systematic-debugging
+- **Meta:** writing-skills, dispatching-parallel-agents, verification-before-completion
 
-### analysis
-Codebase analysis and architecture analysis skills for deep understanding of software systems.
+4 commands: `/feature`, `/fix`, `/init-system`, `/refactor`
 
-### coding
-Coding, testing, API design, and skill-building skills including agent-browser, API design, browser testing, git workflow, Next.js best practices, testing patterns, UI/UX, and skill authoring tools.
+### kb
+知识库管理插件 — 从代码仓库提取、转化、加载和呈现知识。
 
-### office
-Office document handling: xlsx, HTML publishing, and file upload.
+ETL 管道：Extract → Transform → Load/Present，支持 15 skills、3 agents、1 command (`/kb`)。
 
-### interview
-Technical interview preparation and project resume skills.
-
-### reference
-Reference documentation skills for Claude Code, Cursor, Codex, OpenCode, and other AI coding tools.
+站点：Astro 6 + React 18 + d3-force + Fuse.js，三视图（Raw/Wiki/Graph）+ 搜索 + 知识图谱。
 
 ## Development
 
 ### Testing a plugin locally
 
 ```bash
-claude --plugin-dir ./plugins/spec-workflow
+claude --plugin-dir ./plugins/superpowers-pro
+claude --plugin-dir ./plugins/kb
 ```
 
 ### Validating the marketplace

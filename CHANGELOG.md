@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Marketplace
+#### Removed
+- Removed inactive plugins from marketplace.json: analysis, coding, office, interview, wiki
+- Updated README.md to reflect current active plugins only (superpowers-pro, kb)
+
 ## [0.2.0] - 2026-05-23
 
 ### analysis
