@@ -8,7 +8,7 @@ description: 当需要理解模块的业务流程、状态转换、时序关系�
 读取结构地图，逐模块提取流程文档。
 
 <HARD-GATE>
-`data/raw/<project>/_map.md` 必须存在（由 scan 技能产出）。如果没有，先调用 scan 技能。
+`{KB_DATA_ROOT}/raw/<project>/_map.md` 必须存在（由 scan 技能产出）。如果没有，先调用 scan 技能。
 </HARD-GATE>
 
 ## 输入
@@ -18,15 +18,16 @@ description: 当需要理解模块的业务流程、状态转换、时序关系�
 | `--target <path>` | 是 | - | 目标代码库路径 |
 | `--project <name>` | 是 | - | 项目名称 |
 | `--module <name>` | 否 | 全量 | 只分析指定模块 |
+| `--kb-data-root <path>` | 否 | 插件 data 目录绝对路径 | 数据根目录 |
 
 ## 前置条件
 
-- `data/raw/<project>/_map.md` 必须存在
+- `{KB_DATA_ROOT}/raw/<project>/_map.md` 必须存在
 
 ## 输出
 
-- `data/raw/<project>/flows/_index.md`（带 frontmatter 的索引）
-- `data/raw/<project>/flows/modules/<module>.md`（每个模块一份流程文档）
+- `{KB_DATA_ROOT}/raw/<project>/flows/_index.md`（带 frontmatter 的索引）
+- `{KB_DATA_ROOT}/raw/<project>/flows/modules/<module>.md`（每个模块一份流程文档）
 
 ## 反模式
 
@@ -66,10 +67,32 @@ tags: [...]
 
 ## 模板
 
-遵循 `templates/flows.md` 定义的必含章节和质量要求。
+每份流程文档必须包含以下章节：流程概述（触发条件 + 参与者 + 分类）、流程清单（表格：流程名 | 类型 | 触发方式 | 关键性）、流程详情（Mermaid 图 + 异常路径 + 后置状态）、状态机（转换表 + Mermaid 状态图）。
 
 ## 关键原则
 
 - **从入口跟踪：** 流程必须从明确的入口点开始，不能从中间步骤切入，否则无法保证完整性
 - **异常路径不可省略：** 每个流程必须包含异常路径和错误处理，否则文档无法支撑排障
 - **状态图和流程图互补：** 流程图描述步骤顺序，状态图描述状态转换，两者缺一不可
+
+## 质量约束
+
+- 每个模块文档至少 **3 张 Mermaid 图**（流程图 + 序列图 + 状态图）
+- 必须包含**异常路径**（每个流程至少 1 个异常路径）
+- 状态机必须覆盖**所有转换**
+- 每个模块文档至少 **1 张对比表格**
+
+## 验收标准
+
+交付前逐项勾选，P0 未满足必须补充：
+
+### P0 — 必含章节
+- [ ] 流程概述（触发条件 + 参与者 + 分类）
+- [ ] 流程清单（表格：流程名 | 类型 | 触发方式 | 关键性）
+- [ ] 流程详情（Mermaid 图 + 异常路径 + 后置状态）
+- [ ] 状态机（转换表 + Mermaid 状态图）
+
+### P1 — 深度
+- [ ] ≥ 3 张 Mermaid 图
+- [ ] 异常路径覆盖
+- [ ] ≥ 1 张对比表格
