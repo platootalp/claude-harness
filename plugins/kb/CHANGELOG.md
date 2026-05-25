@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0] - 2026-05-25
+
+### Changed
+- 重构调度架构：删除 kb-agent，/kb 命令直接编排 6 步检查点管道
+- extract 阶段：5 维度并行派发子代理（原串行 Skill 调用）
+- transform 阶段：N 维度并行派发 ingest 子代理（原串行循环）
+- cross-ref 改为内联执行（原由 transform-agent 串行调用）
+- 新增人类检查点：Step 3 REVIEW_E（extract 完成后用户审查）
+- extract-agent 重构为单维度子代理模板
+- transform-agent 重构为单维度子代理模板
+
 ## [0.4.0] - 2026-05-25
 
 ### Added
