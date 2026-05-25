@@ -1,0 +1,38 @@
+---
+interface Source {
+  title: string;
+  href: string;
+  dimension?: string;
+}
+
+interface Props {
+  sources: Source[];
+}
+
+const { sources = [] } = Astro.props;
+
+const dimensionLabels: Record<string, string> = {
+  topology: '拓扑',
+  api: 'API',
+  'data-model': '数据模型',
+  flows: '流程',
+  concepts: '概念',
+};
+---
+{sources.length > 0 && (
+  <div class="rounded-lg border border-[var(--color-border)] p-4">
+    <h4 class="mb-3 text-sm font-semibold">来源追踪</h4>
+    <div class="space-y-2">
+      {sources.map(src => (
+        <a href={src.href} class="flex items-center gap-2 text-sm hover:text-[var(--color-accent)]">
+          {src.dimension && (
+            <span class="rounded-full bg-[var(--color-bg-secondary)] px-1.5 py-0.5 text-xs">
+              {dimensionLabels[src.dimension] || src.dimension}
+            </span>
+          )}
+          <span>{src.title}</span>
+        </a>
+      ))}
+    </div>
+  </div>
+)}

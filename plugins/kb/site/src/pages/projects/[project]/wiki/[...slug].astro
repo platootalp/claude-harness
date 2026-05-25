@@ -1,0 +1,96 @@
+---
+import DocLayout from '../../../layouts/DocLayout.astro';
+import CrossReferences from '../../../components/CrossReferences.astro';
+import SourceTraceability from '../../../components/SourceTraceability.astro';
+import { getCollection, render } from 'astro:content';
+
+export function getStaticPaths() {
+  const { readdirSync, statSync, readFileSync, existsSync } = await import('node:fs');
+  const { resolve, join, relative } = await import('node:path');
+  const WIKI_ROOT = resolve(new URL('../../../../data-wiki', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'));
+
+  const paths: { params: { project: string; slug: string } }[] = [];
+  try {
+    const projects = readdirSync(WIKI_ROOT).filter(d => {
+      try { return statSync(resolve(WIKI_ROOT, d)).isDirectory(); } catch { return false; }
+    });
+    for (const project of projects) {
+      const projectDir = resolve(WIKI_ROOT, project);
+      const walkDir = (dir: string) => {
+        const entries = readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = join(dir, entry.name);
+          if (entry.isDirectory()) {
+            walkDir(fullPath);
+          } else if (entry.name.endsWith('.md')) {
+            const relativePath = relative(resolve(WIKI_ROOT, project), fullPath).replace(/\.md$/, '');
+            paths.push({ params: { project, slug: relativePath } });
+          }
+        }
+      };
+      walkDir(projectDir);
+    }
+  } catch {}
+  return paths;
+}
+
+const { project, slug } = Astro.params;
+if (!project || !slug) return Astro.redirect('/');
+
+const allWiki = await getCollection('wiki');
+const entry = allWiki.find(e => {
+  const relativePath = e.id.replace(`projects/${project}/`, '').replace('.md', '');
+  return e.id.startsWith(`projects/${project}/`) && relativePath === slug;
+});
+
+if (!entry) return Astro.redirect(`/projects/${project}/wiki/`);
+
+const { Content } = await render(entry);
+const { data } = entry;
+const title = data.title || slug;
+
+// Build cross-references and sources from frontmatter
+const crossRefs = (data.cross_references || []).map((ref: any) => ({
+  title: ref.title || ref,
+  href: ref.href || `/projects/${project}/wiki/${ref}`,
+  relation: ref.relation || '关联',
+}));
+
+const sources = (data.sources || []).map((src: any) => ({
+  title: src.title || src,
+  href: src.href || `/projects/${project}/raw/${src}`,
+  dimension: src.dimension,
+}));
+---
+<DocLayout title={`${title} — ${project} Wiki`}>
+  <div class="space-y-6">
+    <section>
+      <div class="flex items-center gap-3">
+        <a href={`/projects/${project}/wiki/`} class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)]">← 返回 Wiki</a>
+      </div>
+      <h1 class="mt-4 text-3xl font-bold">{title}</h1>
+      <div class="mt-3 flex flex-wrap gap-2">
+        {data.page_type && (
+          <span class="rounded-full bg-[var(--color-bg-secondary)] px-2 py-0.5 text-xs">
+            {data.page_type === 'entity' ? '实体' : data.page_type === 'concept' ? '概念' : data.page_type === 'synthesis' ? '综合分析' : data.page_type}
+          </span>
+        )}
+        {data.dimension && (
+          <span class="rounded-full bg-[var(--color-bg-secondary)] px-2 py-0.5 text-xs">
+            {data.dimension}
+          </span>
+        )}
+        {data.last_updated && (
+          <span class="text-xs text-[var(--color-text-muted)]">更新于 {data.last_updated}</span>
+        )}
+      </div>
+    </section>
+    <article class="prose prose-sm dark:prose-invert max-w-none">
+      <Content />
+    </article>
+    <aside class="grid gap-4 sm:grid-cols-2">
+      <CrossReferences references={crossRefs} />
+      <SourceTraceability sources={sources} />
+    </aside>
+  </div>
+</DocLayout>

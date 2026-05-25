@@ -1,0 +1,26 @@
+---
+interface CrossRef {
+  title: string;
+  href: string;
+  relation: string;
+}
+
+interface Props {
+  references: CrossRef[];
+}
+
+const { references = [] } = Astro.props;
+---
+{references.length > 0 && (
+  <div class="rounded-lg border border-[var(--color-border)] p-4">
+    <h4 class="mb-3 text-sm font-semibold">交叉引用</h4>
+    <div class="space-y-2">
+      {references.map(ref => (
+        <a href={ref.href} class="flex items-center gap-2 text-sm hover:text-[var(--color-accent)]">
+          <span class="text-[var(--color-text-muted)]">{ref.relation}</span>
+          <span class="font-medium">{ref.title}</span>
+        </a>
+      ))}
+    </div>
+  </div>
+)}
