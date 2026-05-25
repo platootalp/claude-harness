@@ -1,0 +1,18 @@
+---
+interface Props {
+  name: string;
+  description?: string;
+  pageCount?: number;
+  lastUpdated?: string;
+}
+
+const { name, description = '', pageCount = 0, lastUpdated = '' } = Astro.props;
+---
+<a href={`/projects/${name}/`} class="group block rounded-lg border border-[var(--color-border)] p-6 transition hover:border-[var(--color-accent)] hover:shadow-md">
+  <h3 class="text-lg font-semibold group-hover:text-[var(--color-accent)]">{name}</h3>
+  {description && <p class="mt-2 text-sm text-[var(--color-text-muted)]">{description}</p>}
+  <div class="mt-4 flex gap-4 text-xs text-[var(--color-text-muted)]">
+    <span>{pageCount} 页面</span>
+    {lastUpdated && <span>更新于 {lastUpdated}</span>}
+  </div>
+</a>

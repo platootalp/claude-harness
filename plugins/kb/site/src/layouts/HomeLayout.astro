@@ -1,0 +1,50 @@
+---
+import TopNav from '../components/TopNav.astro';
+import ThemeToggle from '../components/ThemeToggle.tsx';
+import ReadingProgress from '../components/ReadingProgress.tsx';
+import siteConfig from '../../site.config';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = siteConfig.description } = Astro.props;
+const fullTitle = title === siteConfig.name ? title : `${title} | ${siteConfig.name}`;
+---
+<!doctype html>
+<html lang="zh-CN" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Prevent FOUC -->
+    <script is:inline>
+      (function() {
+        var stored = localStorage.getItem('theme');
+        var root = document.documentElement;
+        root.classList.remove('dark');
+        if (stored === 'dark') {
+          root.classList.add('dark');
+        } else if (!stored || stored === 'system') {
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (prefersDark) root.classList.add('dark');
+        }
+      })();
+    </script>
+  </head>
+  <body class="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] transition-colors duration-300">
+    <ReadingProgress client:load />
+    <TopNav />
+    <main class="mx-auto max-w-6xl px-6 py-12 pt-24">
+      <slot />
+    </main>
+    <footer class="border-t border-[var(--color-border)] px-6 py-8 text-center text-sm text-[var(--color-text-muted)]">
+      <p>由 KB 插件自动生成</p>
+    </footer>
+  </body>
+</html>

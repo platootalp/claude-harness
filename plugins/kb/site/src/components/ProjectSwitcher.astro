@@ -1,6 +1,54 @@
 ---
-// ProjectSwitcher — placeholder, will be implemented in Task 3
+import siteConfig from '../../site.config';
+
+// In static mode, we read project list from a JSON file generated at build time
+// For now, this is a placeholder that will be populated by the build script
+const projects: { name: string; href: string }[] = [];
+// TODO: In build step, generate /projects.json and fetch it client-side
 ---
-<div class="hidden">
-  <!-- ProjectSwitcher placeholder -->
+<div class="relative" id="project-switcher">
+  <button
+    id="project-switcher-btn"
+    class="flex items-center gap-1 rounded px-2 py-1 text-sm hover:bg-[var(--color-bg-secondary)]"
+    aria-label="切换项目"
+  >
+    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+    </svg>
+    <span>项目</span>
+    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+  <div id="project-switcher-menu" class="absolute left-0 top-full z-50 mt-1 hidden w-48 rounded border border-[var(--color-border)] bg-[var(--color-bg)] py-1 shadow-lg">
+    <div class="px-3 py-2 text-xs text-[var(--color-text-muted)]">选择项目</div>
+    <!-- Populated by client-side script -->
+  </div>
 </div>
+<script>
+  const btn = document.getElementById('project-switcher-btn');
+  const menu = document.getElementById('project-switcher-menu');
+  btn?.addEventListener('click', () => {
+    menu?.classList.toggle('hidden');
+  });
+  document.addEventListener('click', (e) => {
+    if (!(e.target as Element).closest('#project-switcher')) {
+      menu?.classList.add('hidden');
+    }
+  });
+  // Load project list
+  fetch('/projects.json')
+    .then(r => r.json())
+    .then((projects: {name: string; href: string}[]) => {
+      const container = menu?.querySelector('.text-xs')?.nextElementSibling?.parentElement;
+      if (!container) return;
+      projects.forEach(p => {
+        const a = document.createElement('a');
+        a.href = p.href;
+        a.className = 'block px-3 py-2 text-sm hover:bg-[var(--color-bg-secondary)]';
+        a.textContent = p.name;
+        container.appendChild(a);
+      });
+    })
+    .catch(() => {});
+</script>
