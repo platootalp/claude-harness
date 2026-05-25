@@ -1,0 +1,54 @@
+---
+import DocLayout from '../../../layouts/DocLayout.astro';
+import ViewCard from '../../../components/ViewCard.astro';
+import DimensionBar from '../../../components/DimensionBar.astro';
+
+export function getStaticPaths() {
+  const { readdirSync, statSync } = await import('node:fs');
+  const { resolve } = await import('node:path');
+  const RAW_ROOT = resolve(new URL('../../../../data-raw', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'));
+
+  const projects: { params: { project: string } }[] = [];
+  try {
+    const dirs = readdirSync(RAW_ROOT).filter(d => {
+      try { return statSync(resolve(RAW_ROOT, d)).isDirectory(); } catch { return false; }
+    });
+    for (const dir of dirs) {
+      projects.push({ params: { project: dir } });
+    }
+  } catch {}
+  return projects;
+}
+
+const { project } = Astro.params;
+if (!project) return Astro.redirect('/');
+
+const title = `${project} — 项目首页`;
+---
+<DocLayout title={title}>
+  <div class="space-y-8">
+    <section>
+      <h1 class="text-3xl font-bold">{project}</h1>
+      <p class="mt-2 text-[var(--color-text-muted)]">代码库知识库 — 选择查看方式</p>
+    </section>
+
+    <section>
+      <div class="grid gap-6 sm:grid-cols-3">
+        <ViewCard title="Raw 文档" description="原始提取产出 — 拓扑、API、数据模型、流程、概念" href={`/projects/${project}/raw/`} icon="📄" count={0} />
+        <ViewCard title="Wiki 页面" description="结构化知识页面 — 实体、概念、综合分析" href={`/projects/${project}/wiki/`} icon="📖" count={0} />
+        <ViewCard title="知识图谱" description="交互式关系图谱 — 实体和概念的可视化" href={`/projects/${project}/graph/`} icon="🕸️" />
+      </div>
+    </section>
+
+    <section>
+      <h2 class="mb-4 text-xl font-semibold">提取维度</h2>
+      <DimensionBar dimensions={[
+        { name: 'topology', label: '拓扑', count: 0, status: 'empty' },
+        { name: 'api', label: 'API', count: 0, status: 'empty' },
+        { name: 'data-model', label: '数据模型', count: 0, status: 'empty' },
+        { name: 'flows', label: '流程', count: 0, status: 'empty' },
+        { name: 'concepts', label: '概念', count: 0, status: 'empty' },
+      ]} />
+    </section>
+  </div>
+</DocLayout>
