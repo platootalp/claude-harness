@@ -34,6 +34,11 @@
       "name": "superpowers-pro",
       "source": "./plugins/superpowers-pro",
       "description": "Structured development workflows for coding agents — feature development, debugging, code review, and more"
+    },
+    {
+      "name": "kb",
+      "source": "./plugins/kb",
+      "description": "知识库管理插件 — 从代码仓库提取、转化、加载和呈现知识"
     }
   ]
 }

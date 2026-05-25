@@ -1,0 +1,17 @@
+{
+  "extraction": {
+    "language": "zh-CN",
+    "max_depth": 3,
+    "include_patterns": ["**/*.md", "**/*.ts", "**/*.js", "**/*.py", "**/*.go", "**/*.java", "**/*.rs"],
+    "exclude_patterns": ["**/node_modules/**", "**/.git/**", "**/dist/**", "**/build/**", "**/__pycache__/**"],
+    "batch_size": 50
+  },
+  "transform": {
+    "dedup_threshold": 0.85,
+    "quality_min_score": 0.6
+  },
+  "present": {
+    "default_depth": 2,
+    "max_context_tokens": 8000
+  }
+}
