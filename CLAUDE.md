@@ -17,7 +17,7 @@ plugins/                           # Active plugin packages
     hooks/                         # Session-start hook (injects using-superpowers skill on startup)
   kb/                              # Knowledge base management (ETL pipeline)
     .claude-plugin/plugin.json
-    agents/                        # extract-agent, kb-agent, transform-agent
+    agents/                        # extract-agent, transform-agent (维度级子代理)
     commands/                      # /kb command
     skills/                        # 15 skills (scan, extract-*, transform, ingest, etc.)
     site/                          # Astro 6 + React 18 + d3-force + Fuse.js
@@ -59,15 +59,15 @@ The `session-start` hook automatically injects `using-superpowers` SKILL.md cont
 
 ## Active Plugin: kb
 
-`plugins/kb/` — 知识库管理插件 v0.4.0。ETL 管道：Extract → Transform → Load/Present。
+`plugins/kb/` — 知识库管理插件 v0.5.0。ETL 管道：Extract → Transform → Load/Present。
 
 | Phase | Skills | Agents |
 |-------|--------|--------|
-| Extract | scan, extract (路由), extract-topology, extract-api, extract-data-model, extract-flows, extract-concepts | extract-agent |
-| Transform | transform (路由), ingest, cross-ref | transform-agent |
+| Extract | scan, extract (路由), extract-topology, extract-api, extract-data-model, extract-flows, extract-concepts | extract-agent (单维度) |
+| Transform | transform (路由), ingest, cross-ref | transform-agent (单维度) |
 | Load | build-search-index, build-graph, serve | — |
 | Present | （通过站点交互式展示） | — |
-| Entry | /kb 命令 → kb-agent | kb-agent, extract-agent, transform-agent |
+| Entry | /kb 命令（6 步检查点编排，并行派发子代理） | extract-agent, transform-agent |
 
 站点：`plugins/kb/site/`（Astro 6 + React 18 + d3-force + Fuse.js），三视图（Raw/Wiki/Graph）+ 搜索 + 知识图谱。
 

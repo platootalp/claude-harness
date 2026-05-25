@@ -39,7 +39,7 @@ description: 当需要对代码库进行多维度深度分析时使用。路由�
    - `flows` → `extract-flows`
    - `concepts` → `extract-concepts`
    - 不指定 → 全部 5 个
-3. 逐个调用对应技能（或并发调用，如果 extract-agent 可用）
+3. 逐个调用对应技能（或并发调用，如果 extract-agent 可用，或由 /kb 命令并行派发）
 4. 汇总结果，报告每个维度的产出文件数量
 
 ## 关键原则

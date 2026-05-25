@@ -17,11 +17,11 @@ tools: Read, Glob, Grep, Bash, Skill, Write
 
 1. 读取 `data/raw/<project>/_map.md`（硬前置：必须存在）
 2. 根据 dimension 参数调用对应技能：
-   - topology → `extract-topology`
-   - api → `extract-api`
-   - data-model → `extract-data-model`
-   - flows → `extract-flows`
-   - concepts → `extract-concepts`
+   - topology → `kb:extract-topology`
+   - api → `kb:extract-api`
+   - data-model → `kb:extract-data-model`
+   - flows → `kb:extract-flows`
+   - concepts → `kb:extract-concepts`
 3. 验证产出：确认 `data/raw/<project>/<dimension>/_index.md` 存在且 `modules/` 目录非空
 4. 报告结果
 

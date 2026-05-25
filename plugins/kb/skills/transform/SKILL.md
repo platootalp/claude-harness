@@ -30,7 +30,7 @@ description: 当需要将 raw 提取产出转化为结构化 wiki 页面、建�
 
 1. 扫描 raw 目录，找到 unprocessed 的维度
 2. 调用 ingest 技能转化
-3. 如果未跳过 cross-ref，调用 cross-ref 技能
+3. 如果未跳过 cross-ref，调用 cross-ref 技能（注意：在 /kb 命令管道中，cross-ref 由 /kb 命令内联执行，不由 transform 路由负责）
 4. 汇总结果
 
 ## 关键原则

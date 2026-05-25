@@ -16,8 +16,8 @@ tools: Read, Glob, Grep, Bash, Skill, Write, Edit
 ## 执行流程
 
 1. 读取 `data/raw/<project>/<dimension>/_index.md`，确认 `status: unprocessed`
-2. 调用 `ingest` 技能处理该维度
-3. 写出 wiki 页面（entity/concept/synthesis）
+2. 调用 `kb:ingest` 技能处理该维度
+3. 确认 `kb:ingest` 技能已产出 wiki 页面（entity/concept/synthesis）
 4. 更新 `_index.md` status 为 `processed`
 5. 报告结果
 
