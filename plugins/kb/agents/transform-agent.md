@@ -12,10 +12,11 @@ tools: Read, Glob, Grep, Bash, Skill, Write, Edit
 
 - `--project`: 项目名称（必需）
 - `--dimension`: 转化维度（必需），对应 raw 目录下的维度名
+- `--kb-data-root`: 数据根目录绝对路径（必需）
 
 ## 执行流程
 
-1. 读取 `data/raw/<project>/<dimension>/_index.md`，确认 `status: unprocessed`
+1. 读取 `{kb-data-root}/raw/<project>/<dimension>/_index.md`，确认 `status: unprocessed`
 2. 调用 `kb:ingest` 技能处理该维度
 3. 确认 `kb:ingest` 技能已产出 wiki 页面（entity/concept/synthesis）
 4. 更新 `_index.md` status 为 `processed`
