@@ -1,0 +1,76 @@
+---
+name: extract-topology
+description: 当需要理解模块内部结构、职责边界、上下游交互方式、或关键设计决策时使用。读取结构地图，逐模块产出深度拓扑分析文档。
+---
+
+# Extract Topology — 模块拓扑深度分析
+
+读取结构地图，逐模块产出深度拓扑分析文档。
+
+<HARD-GATE>
+`data/raw/<project>/_map.md` 必须存在（由 scan 技能产出）。如果没有，先调用 scan 技能。
+</HARD-GATE>
+
+## 输入
+
+| 参数 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `--target <path>` | 是 | - | 目标代码库路径 |
+| `--project <name>` | 是 | - | 项目名称 |
+| `--module <name>` | 否 | 全量 | 只分析指定模块 |
+
+## 前置条件
+
+- `data/raw/<project>/_map.md` 必须存在
+
+## 输出
+
+- `data/raw/<project>/topology/_index.md`（带 frontmatter 的索引）
+- `data/raw/<project>/topology/modules/<module>.md`（每个模块一份深度文档）
+
+## 反模式
+
+| 想法 | 问题 |
+|------|------|
+| "我已经很熟悉这个模块了，不需要读代码" | 直觉会遗漏内部结构变化和隐性依赖，必须从代码证据出发 |
+| "把所有模块写在一个大文件里" | 每个模块一份文档，保证独立性和可读性 |
+| "职责边界只写负责什么就够了" | 只写"负责"会导致职责扩散——读者会假设你没写的你也管。必须同时写"不负责" |
+| "Mermaid 图可有可无" | 拓扑分析的核心价值是可视化关系。没有图 = 没有拓扑分析 |
+
+## 执行流程
+
+1. 读取 `_map.md`，获取模块清单和依赖关系
+2. 如果指定了 `--module`，只分析该模块；否则分析所有模块
+3. 对每个模块：
+   a. 读取模块目录下的所有文件
+   b. 分析内部结构（子目录、子模块、文件组织）
+   c. 确定职责边界（负责什么、不负责什么）
+   d. 分析上游依赖（依赖谁、通过什么接口）
+   e. 分析下游依赖（被谁依赖、提供什么接口）
+   f. 识别关键设计决策
+   g. 收集代码证据（关键文件路径和作用）
+   h. 按 `templates/topology.md` 模板生成深度文档
+   i. 写入 `topology/modules/<module>.md`
+4. 生成 `topology/_index.md`（模块清单 + 依赖总图 + frontmatter）
+
+## `_index.md` frontmatter
+
+```yaml
+---
+project: <project>
+dimension: topology
+date: YYYY-MM-DD
+status: unprocessed
+tags: [...]
+---
+```
+
+## 模板
+
+遵循 `templates/topology.md` 定义的必含章节和质量要求。
+
+## 关键原则
+
+- **从代码出发，不从记忆出发：** 每个结论必须有代码路径佐证
+- **职责边界是对称的：** "负责"和"不负责"同样重要，缺一不可
+- **一个模块一个文件：** 保证文档独立性和 Transform 阶段的可处理性
