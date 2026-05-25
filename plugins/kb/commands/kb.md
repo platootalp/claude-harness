@@ -33,6 +33,17 @@ effort: high
 
 子命令执行时，跳过的步骤用 SKIPPED(⊘) 标记，检查点协议不变。
 
+## 路径约定
+
+所有数据写入路径基于 `KB_DATA_ROOT`，计算规则：
+
+1. 读取本 command 文件所在目录，向上两级即为插件根目录（`commands/` → plugin root）
+2. `KB_DATA_ROOT = <plugin-root>/data/`
+3. 所有子代理 prompt 中，将 `data/raw/` 替换为 `{KB_DATA_ROOT}/raw/`，`data/wiki/` 替换为 `{KB_DATA_ROOT}/wiki/`
+4. 在派发子代理时，将 `KB_DATA_ROOT` 的绝对路径作为参数传入 prompt
+
+**示例：** 插件安装在 `/Users/x/.claude/plugins/cache/harness-marketplace/kb/0.6.0/`，则 `KB_DATA_ROOT = /Users/x/.claude/plugins/cache/harness-marketplace/kb/0.6.0/data/`
+
 ## 进度总览
 
 ▶ /kb 启动 — 知识库 ETL 管道
@@ -51,38 +62,43 @@ effort: high
 调用 `kb:scan` skill。
 
 - 扫描代码库结构，产出模块清单、依赖关系、架构分层、入口识别、复杂度指标
-- 输出: `data/raw/<project>/_map.md`
+- 输出: `{KB_DATA_ROOT}/raw/<project>/_map.md`
 - 硬前置: 无
 
 检查点: `━━━ [✓] Step 1/6: SCAN — _map.md 已产出`
-产出物: `data/raw/<project>/_map.md`
+产出物: `{KB_DATA_ROOT}/raw/<project>/_map.md`
 
 ## Step 2/6: EXTRACT
 
-**并行派发 5 个 extract 维度子代理。**
+**按模块并行派发 extract 子代理。**
 
-用 Agent 工具同时派发 5 个子代理，每个处理一个维度。在一条消息中发出 5 个 Agent 工具调用，实现并行执行。
-
-每个子代理 prompt 模板:
+1. 读取 `{KB_DATA_ROOT}/raw/<project>/_map.md`，解析模块清单
+2. 对每个维度 × 每个模块，派发一个子代理（最多同时 10 个并行）
+3. 每个子代理 prompt 模板:
 ```
-你是 extract 维度子代理。
+你是 extract 模块子代理。
 
 项目: {project}
 维度: {dimension}
+模块: {module}
+数据根目录: {KB_DATA_ROOT}
+目标代码库: {target_path}
 
 执行流程:
-1. 读取 data/raw/{project}/_map.md
-2. 调用 kb:extract-{dimension} skill
-3. 验证产出: data/raw/{project}/{dimension}/_index.md 存在且 modules/ 非空
-4. 报告: 维度 / 状态 / 产出文件数量 / 问题
+1. 读取 {KB_DATA_ROOT}/raw/{project}/_map.md
+2. 读取目标模块的源代码文件
+3. 调用 kb:extract-{dimension} skill（仅分析 {module} 模块，传入 --module {module} 参数）
+4. 验证产出: {KB_DATA_ROOT}/raw/{project}/{dimension}/modules/{module}.md 存在且内容满足验收标准
+5. 报告: 维度 / 模块 / 状态 / 产出行数 / 验收通过项
 ```
 
 5 个维度: topology, api, data-model, flows, concepts
+模块列表: 从 _map.md 的模块清单表格提取
 
-等待所有 5 个子代理完成后，汇总结果。
+等待所有子代理完成后，汇总结果。对每个维度生成 `_index.md`（汇总该维度所有模块的产出）。
 
-检查点: `━━━ [✓] Step 2/6: EXTRACT — 5 个维度提取完成`
-产出物: `data/raw/<project>/{topology,api,data-model,flows,concepts}/`
+检查点: `━━━ [✓] Step 2/6: EXTRACT — 所有维度×模块提取完成`
+产出物: `{KB_DATA_ROOT}/raw/<project>/{topology,api,data-model,flows,concepts}/`
 
 ## Step 3/6: REVIEW_E
 
@@ -102,7 +118,7 @@ effort: high
 
 ### Phase A: 并行 ingest
 
-扫描 `data/raw/<project>/` 下 `status: unprocessed` 的维度，为每个维度用 Agent 工具并行派发一个 transform 子代理。
+扫描 `{KB_DATA_ROOT}/raw/<project>/` 下 `status: unprocessed` 的维度，为每个维度用 Agent 工具并行派发一个 transform 子代理。
 
 每个子代理 prompt 模板:
 ```
@@ -110,11 +126,12 @@ effort: high
 
 项目: {project}
 维度: {dimension}
+数据根目录: {KB_DATA_ROOT}
 
 执行流程:
-1. 读取 data/raw/{project}/{dimension}/_index.md，确认 status: unprocessed
-2. 调用 kb:ingest skill 处理该维度
-3. 写出 wiki 页面（entity/concept/synthesis）
+1. 读取 {KB_DATA_ROOT}/raw/{project}/{dimension}/_index.md，确认 status: unprocessed
+2. 调用 kb:ingest skill 处理该维度（传入 --kb-data-root {KB_DATA_ROOT} 参数）
+3. 写出 wiki 页面到 {KB_DATA_ROOT}/wiki/{project}/（entity/concept/synthesis）
 4. 更新 _index.md status 为 processed
 5. 报告: 维度 / 状态 / 产出页面数量 / 问题
 ```
@@ -129,17 +146,17 @@ effort: high
 - 更新 overview.md
 
 检查点: `━━━ [✓] Step 4/6: TRANSFORM — N 维度转化 + cross-ref 完成`
-产出物: `data/wiki/<project>/` + cross-ref 结果
+产出物: `{KB_DATA_ROOT}/wiki/<project>/` + cross-ref 结果
 
 ## Step 5/6: LOAD
 
 内联执行，不派发子代理。
 
-1. 调用 `kb:build-search-index` skill → `public/search-index.json`
-2. 调用 `kb:build-graph` skill → `public/graph.json` + `public/projects.json`
+1. 调用 `kb:build-search-index` skill → `{KB_DATA_ROOT}/../site/public/search-index.json`
+2. 调用 `kb:build-graph` skill → `{KB_DATA_ROOT}/../site/public/graph.json` + `{KB_DATA_ROOT}/../site/public/projects.json`
 
 检查点: `━━━ [✓] Step 5/6: LOAD — 索引和图谱数据已构建`
-产出物: `public/search-index.json` + `public/graph.json`
+产出物: `{KB_DATA_ROOT}/../site/public/search-index.json` + `{KB_DATA_ROOT}/../site/public/graph.json`
 
 ## Step 6/6: SERVE
 
@@ -151,4 +168,4 @@ effort: high
 4. `npm run preview`（启动预览服务器）
 
 检查点: `━━━ [✓] Step 6/6: SERVE — 站点已构建，预览已启动`
-产出物: 预览 URL（默认 http://localhost:4321）
+产出物: 预览 URL（默认 http://localhost:4321），站点目录: `{KB_DATA_ROOT}/../site/`
