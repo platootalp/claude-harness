@@ -8,7 +8,7 @@ description: 当需要理解模块的核心概念、领域术语、概念关系�
 读取结构地图，逐模块提取概念术语文档。
 
 <HARD-GATE>
-`data/raw/<project>/_map.md` 必须存在（由 scan 技能产出）。如果没有，先调用 scan 技能。
+`{KB_DATA_ROOT}/raw/<project>/_map.md` 必须存在（由 scan 技能产出）。如果没有，先调用 scan 技能。
 </HARD-GATE>
 
 ## 输入
@@ -18,15 +18,16 @@ description: 当需要理解模块的核心概念、领域术语、概念关系�
 | `--target <path>` | 是 | - | 目标代码库路径 |
 | `--project <name>` | 是 | - | 项目名称 |
 | `--module <name>` | 否 | 全量 | 只分析指定模块 |
+| `--kb-data-root <path>` | 否 | 插件 data 目录绝对路径 | 数据根目录 |
 
 ## 前置条件
 
-- `data/raw/<project>/_map.md` 必须存在
+- `{KB_DATA_ROOT}/raw/<project>/_map.md` 必须存在
 
 ## 输出
 
-- `data/raw/<project>/concepts/_index.md`（带 frontmatter 的索引）
-- `data/raw/<project>/concepts/modules/<module>.md`（每个模块一份概念术语文档）
+- `{KB_DATA_ROOT}/raw/<project>/concepts/_index.md`（带 frontmatter 的索引）
+- `{KB_DATA_ROOT}/raw/<project>/concepts/modules/<module>.md`（每个模块一份概念术语文档）
 
 ## 反模式
 
@@ -49,7 +50,7 @@ description: 当需要理解模块的核心概念、领域术语、概念关系�
    e. 提取命名规范（变量命名模式、函数命名约定、缩写表）
    f. 识别概念演进（废弃术语、重命名历史、版本间概念变化）
    g. 生成 Mermaid 概念关系图和概念层次图
-   h. 按 `templates/concepts.md` 模板生成概念术语文档，写入 `concepts/modules/<module>.md`
+   h. 生成概念术语文档，写入 `concepts/modules/<module>.md`
 4. 生成 `concepts/_index.md`（概念清单 + 跨模块概念关系图 + frontmatter）
 
 ## `_index.md` frontmatter
@@ -66,10 +67,32 @@ tags: [...]
 
 ## 模板
 
-遵循 `templates/concepts.md` 定义的必含章节和质量要求。
+每份概念术语文档必须包含以下章节：术语表（表格：术语 | 英文对照 | 定义 | 首次出现位置，按字母排序）、核心概念（定义 + 角色 + 代码路径 + Mermaid 图）、概念层次（Mermaid 层次图）、命名规范（模式 + 约定 + 缩写表）。
 
 ## 关键原则
 
 - **概念必须有代码证据：** 每个核心概念必须关联到具体的代码路径，不接受无代码支撑的纯理论概念
 - **术语表需全量覆盖：** 所有领域特定术语都必须收录，包括看似常见的词——对新成员而言没有"显而易见"的术语
 - **概念层次是推断：** 概念的抽象层次基于代码中的使用模式推断，可能与设计者意图不一致，后续 Transform 可修正
+
+## 质量约束
+
+- 每个模块文档至少 **2 张 Mermaid 图**（概念关系图 + 概念层次图）
+- 术语表必须**表格形式**（术语 | 英文对照 | 定义 | 首次出现位置）
+- 每个核心概念必须有**代码路径**
+- 每个模块文档至少 **1 张对比表格**
+
+## 验收标准
+
+交付前逐项勾选，P0 未满足必须补充：
+
+### P0 — 必含章节
+- [ ] 术语表（表格形式，按字母排序）
+- [ ] 核心概念（定义 + 角色 + 代码路径 + Mermaid 图）
+- [ ] 概念层次（Mermaid 层次图）
+- [ ] 命名规范（模式 + 约定 + 缩写表）
+
+### P1 — 深度
+- [ ] ≥ 2 张 Mermaid 图
+- [ ] 术语表为表格形式
+- [ ] ≥ 1 张对比表格
