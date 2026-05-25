@@ -8,7 +8,7 @@ description: 当需要理解模块的数据结构、实体关系、字段定义�
 读取结构地图，逐模块提取数据模型文档。
 
 <HARD-GATE>
-`data/raw/<project>/_map.md` 必须存在（由 scan 技能产出）。如果没有，先调用 scan 技能。
+`{KB_DATA_ROOT}/raw/<project>/_map.md` 必须存在（由 scan 技能产出）。如果没有，先调用 scan 技能。
 </HARD-GATE>
 
 ## 输入
@@ -18,15 +18,16 @@ description: 当需要理解模块的数据结构、实体关系、字段定义�
 | `--target <path>` | 是 | - | 目标代码库路径 |
 | `--project <name>` | 是 | - | 项目名称 |
 | `--module <name>` | 否 | 全量 | 只提取指定模块 |
+| `--kb-data-root <path>` | 否 | 插件 data 目录绝对路径 | 数据根目录 | |
 
 ## 前置条件
 
-- `data/raw/<project>/_map.md` 必须存在
+- `{KB_DATA_ROOT}/raw/<project>/_map.md` 必须存在
 
 ## 输出
 
-- `data/raw/<project>/data-model/_index.md`（带 frontmatter 的索引）
-- `data/raw/<project>/data-model/modules/<module>.md`（每个模块一份数据模型文档）
+- `{KB_DATA_ROOT}/raw/<project>/data-model/_index.md`（带 frontmatter 的索引）
+- `{KB_DATA_ROOT}/raw/<project>/data-model/modules/<module>.md`（每个模块一份数据模型文档）
 
 ## 反模式
 
@@ -66,10 +67,33 @@ tags: [...]
 
 ## 模板
 
-遵循 `templates/data-model.md` 定义的必含章节和质量要求。
+每份数据模型文档必须包含以下章节：模型概述（设计哲学 + ER 图）、实体清单（表格：实体名 | 用途 | 核心字段数 | 关联实体数）、实体详情（字段表含约束 + 索引定义）、关系详情（级联规则 + Mermaid 图）。
 
 ## 关键原则
 
 - **从代码出发，不从 schema 出发：** 数据库 schema 缺少业务语义，必须从代码中补充约束含义和生命周期规则
 - **约束信息不可省略：** 字段的唯一性、非空、默认值是数据完整性的基础，缺一不可
 - **关系必须标注级联规则：** 级联删除/更新的行为直接影响数据安全，必须明确记录
+
+## 质量约束
+
+- 每个模块文档至少 **2 张 Mermaid 图**（ER 图 + 关系图）
+- 字段定义必须包含**约束信息**（非空/唯一/默认值）
+- 关系必须标注**级联规则**
+- 每个模块文档至少 **1 张对比表格**
+
+## 验收标准
+
+交付前逐项勾选，P0 未满足必须补充：
+
+### P0 — 必含章节
+- [ ] 模型概述（设计哲学 + ER 图）
+- [ ] 实体清单（表格）
+- [ ] 实体详情（字段表含约束 + 索引定义）
+- [ ] 关系详情（级联规则 + Mermaid 图）
+
+### P1 — 深度
+- [ ] ≥ 2 张 Mermaid 图
+- [ ] 字段含约束信息
+- [ ] 关系含级联规则
+- [ ] ≥ 1 张对比表格
