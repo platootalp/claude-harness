@@ -49,7 +49,7 @@ description: 当需要理解模块对外暴露的接口、协议、参数格式�
    d. 提取错误码（错误码、含义、触发条件）
    e. 提取调用模式（调用序列、分页/游标、幂等性）
    f. 生成 Mermaid 序列图（典型调用流程）
-   g. 按 `templates/api.md` 模板生成接口文档
+   g. 按必含章节生成接口文档
    h. 写入 `api/modules/<module>.md`
 4. 生成 `api/_index.md`（接口清单 + 调用总图 + frontmatter）
 

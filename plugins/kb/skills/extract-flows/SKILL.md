@@ -50,7 +50,7 @@ description: 当需要理解模块的业务流程、状态转换、时序关系�
    e. 提取超时/重试（超时配置、重试策略、退避算法、熔断机制）
    f. 识别并发控制（锁、事务隔离级别、乐观锁/悲观锁、幂等键）
    g. 生成 Mermaid 图（流程图 + 序列图 + 状态图）
-   h. 按 `templates/flows.md` 模板写入 `flows/modules/<module>.md`
+   h. 按必含章节写入 `flows/modules/<module>.md`
 4. 生成 `flows/_index.md`（流程清单 + 跨模块流程总图 + frontmatter）
 
 ## `_index.md` frontmatter

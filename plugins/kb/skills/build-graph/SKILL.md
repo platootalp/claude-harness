@@ -21,4 +21,4 @@ node scripts/build-graph-data.mjs
 
 ## 输出
 
-`public/graph.json` + `public/projects.json`
+输出: `{KB_DATA_ROOT}/../site/public/graph.json` + `public/projects.json`

@@ -21,4 +21,4 @@ node scripts/build-search-index.mjs
 
 ## 输出
 
-`public/search-index.json`
+输出: `{KB_DATA_ROOT}/../site/public/search-index.json`

@@ -18,7 +18,7 @@ description: 当需要理解模块的数据结构、实体关系、字段定义�
 | `--target <path>` | 是 | - | 目标代码库路径 |
 | `--project <name>` | 是 | - | 项目名称 |
 | `--module <name>` | 否 | 全量 | 只提取指定模块 |
-| `--kb-data-root <path>` | 否 | 插件 data 目录绝对路径 | 数据根目录 | |
+| `--kb-data-root <path>` | 否 | 插件 data 目录绝对路径 | 数据根目录 |
 
 ## 前置条件
 
@@ -50,7 +50,7 @@ description: 当需要理解模块的数据结构、实体关系、字段定义�
    e. 提取枚举（枚举名、值、业务含义）
    f. 提取生命周期规则（创建/更新/删除钩子、软删除、归档策略）
    g. 生成 Mermaid ER 图
-   h. 按 `templates/data-model.md` 模板写入 `data-model/modules/<module>.md`
+   h. 按必含章节写入 `data-model/modules/<module>.md`
 4. 生成 `data-model/_index.md`（模块清单 + ER 总图 + frontmatter）
 
 ## `_index.md` frontmatter

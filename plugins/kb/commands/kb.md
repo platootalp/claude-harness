@@ -87,7 +87,7 @@ effort: high
 执行流程:
 1. 读取 {KB_DATA_ROOT}/raw/{project}/_map.md
 2. 读取目标模块的源代码文件
-3. 调用 kb:extract-{dimension} skill（仅分析 {module} 模块，传入 --module {module} 参数）
+3. 调用 kb:extract-{dimension} skill（传入 --target {target_path} --module {module} --kb-data-root {KB_DATA_ROOT} 参数）
 4. 验证产出: {KB_DATA_ROOT}/raw/{project}/{dimension}/modules/{module}.md 存在且内容满足验收标准
 5. 报告: 维度 / 模块 / 状态 / 产出行数 / 验收通过项
 ```

@@ -18,6 +18,7 @@ description: 当需要将 raw 提取产出转化为结构化 wiki 页面、建�
 | `transform --project <name>` | 全量转化 + 交叉引用 |
 | `transform --project <name> --dimension topology` | 只转化指定维度 |
 | `transform --project <name> --skip-cross-ref` | 跳过交叉引用 |
+| `transform --kb-data-root <path>` | 指定数据根目录 |
 
 ## 反模式
 
@@ -28,7 +29,7 @@ description: 当需要将 raw 提取产出转化为结构化 wiki 页面、建�
 
 ## 执行流程
 
-1. 扫描 raw 目录，找到 unprocessed 的维度
+1. 扫描 `{KB_DATA_ROOT}/raw/<project>/` 目录，找到 unprocessed 的维度
 2. 调用 ingest 技能转化
 3. 如果未跳过 cross-ref，调用 cross-ref 技能（注意：在 /kb 命令管道中，cross-ref 由 /kb 命令内联执行，不由 transform 路由负责）
 4. 汇总结果

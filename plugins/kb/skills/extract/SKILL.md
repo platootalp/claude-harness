@@ -21,6 +21,7 @@ description: 当需要对代码库进行多维度深度分析时使用。路由�
 | `extract --target <path> --project <name> --dimension data-model` | 只提取数据模型 |
 | `extract --target <path> --project <name> --dimension flows` | 只提取业务流程 |
 | `extract --target <path> --project <name> --dimension concepts` | 只提取领域概念 |
+| `extract --kb-data-root <path>` | 指定数据根目录 |
 
 ## 反模式
 
@@ -31,7 +32,7 @@ description: 当需要对代码库进行多维度深度分析时使用。路由�
 
 ## 执行流程
 
-1. 如果 `_map.md` 不存在，先调用 `scan` 技能
+1. 如果 `{KB_DATA_ROOT}/raw/<project>/_map.md` 不存在，先调用 `scan` 技能
 2. 根据 `--dimension` 参数决定调用哪些技能：
    - `topology` → `extract-topology`
    - `api` → `extract-api`
@@ -39,7 +40,7 @@ description: 当需要对代码库进行多维度深度分析时使用。路由�
    - `flows` → `extract-flows`
    - `concepts` → `extract-concepts`
    - 不指定 → 全部 5 个
-3. 逐个调用对应技能（或并发调用，如果 extract-agent 可用，或由 /kb 命令并行派发）
+3. 逐个调用对应技能（传入 `--kb-data-root` 参数），或并发调用（如果 extract-agent 可用，或由 /kb 命令并行派发）
 4. 汇总结果，报告每个维度的产出文件数量
 
 ## 关键原则
