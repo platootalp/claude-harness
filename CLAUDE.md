@@ -26,11 +26,12 @@ docs/                              # Internal specs and plans (not shipped)
 
 ## Marketplace Registry
 
-`marketplace.json` 注册了 6 个插件，但实际目录状态不一致：
+`marketplace.json` 注册了 7 个插件，kb 为新增活跃插件：
 
 | Plugin | marketplace.json source | 实际位置 | 状态 |
 |--------|------------------------|---------|------|
 | **superpowers-pro** | `./plugins/superpowers-pro` | `plugins/superpowers-pro/` | 活跃 |
+| **kb** | `./plugins/kb` | `plugins/kb/` | 活跃 |
 | **analysis** | `./plugins/analysis` | `other/analysis/` | 已移出，source 路径失效 |
 | **coding** | `./plugins/coding` | `other/coding/` | 已移出，source 路径失效 |
 | **office** | `./plugins/office` | `other/analysis/office/` | 已移出，source 路径失效 |
@@ -41,7 +42,7 @@ docs/                              # Internal specs and plans (not shipped)
 
 ## Active Plugin: superpowers-pro
 
-`plugins/` 下唯一的活跃插件。15 skills 覆盖结构化开发工作流：
+`plugins/` 下的活跃插件之一。15 skills 覆盖结构化开发工作流：
 
 | Category | Skills |
 |----------|--------|
@@ -54,6 +55,20 @@ docs/                              # Internal specs and plans (not shipped)
 | Meta | writing-skills, dispatching-parallel-agents, verification-before-completion |
 
 The `session-start` hook automatically injects `using-superpowers` SKILL.md content into agent context, establishing skill discovery behavior for every session.
+
+## Active Plugin: kb
+
+`plugins/kb/` — 知识库管理插件 v0.4.0。ETL 管道：Extract → Transform → Load/Present。
+
+| Phase | Skills | Agents |
+|-------|--------|--------|
+| Extract | scan, extract (路由), extract-topology, extract-api, extract-data-model, extract-flows, extract-concepts | extract-agent |
+| Transform | transform (路由), ingest, cross-ref | transform-agent |
+| Load | build-search-index, build-graph, serve | — |
+| Present | （通过站点交互式展示） | — |
+| Entry | /kb 命令 → kb-agent | kb-agent, extract-agent, transform-agent |
+
+站点：`plugins/kb/site/`（Astro 6 + React 18 + d3-force + Fuse.js），三视图（Raw/Wiki/Graph）+ 搜索 + 知识图谱。
 
 ## Inactive Plugins (other/)
 
