@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- scan skill：代码库结构梳理，产出 `_map.md` 作为 Extract 管道起点
+
 ## [0.1.0] - 2026-05-25
 
 ### Added
