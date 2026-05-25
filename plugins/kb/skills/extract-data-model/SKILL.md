@@ -1,0 +1,75 @@
+---
+name: extract-data-model
+description: 当需要理解模块的数据结构、实体关系、字段定义、或数据生命周期时使用。读取结构地图，逐模块提取数据模型文档。
+---
+
+# Extract Data Model — 数据模型提取
+
+读取结构地图，逐模块提取数据模型文档。
+
+<HARD-GATE>
+`data/raw/<project>/_map.md` 必须存在（由 scan 技能产出）。如果没有，先调用 scan 技能。
+</HARD-GATE>
+
+## 输入
+
+| 参数 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `--target <path>` | 是 | - | 目标代码库路径 |
+| `--project <name>` | 是 | - | 项目名称 |
+| `--module <name>` | 否 | 全量 | 只提取指定模块 |
+
+## 前置条件
+
+- `data/raw/<project>/_map.md` 必须存在
+
+## 输出
+
+- `data/raw/<project>/data-model/_index.md`（带 frontmatter 的索引）
+- `data/raw/<project>/data-model/modules/<module>.md`（每个模块一份数据模型文档）
+
+## 反模式
+
+| 想法 | 问题 |
+|------|------|
+| "我直接看数据库 schema 就行了" | 数据库 schema 缺少业务语义、生命周期规则和设计意图，必须从代码中补充 |
+| "把所有实体的数据模型写在一个文件里" | 每个模块一份文档，保证独立性和可读性 |
+| "字段类型照抄代码类型就够了" | 必须补充约束信息（唯一、非空、默认值）和业务含义，否则文档无决策价值 |
+| "ER 图太麻烦，用文字描述关系就行" | 数据模型的核心价值是实体关系的可视化。没有 ER 图 = 没有数据模型分析 |
+
+## 执行流程
+
+1. 读取 `_map.md`，获取模块清单和依赖关系
+2. 如果指定了 `--module`，只提取该模块；否则提取所有模块
+3. 对每个模块：
+   a. 识别数据模型文件（schema 定义、model/Entity 类、migration 文件、ORM 映射）
+   b. 提取实体定义（表/集合/模型名、用途、业务含义）
+   c. 提取字段和约束（字段名、类型、非空、唯一、默认值、计算字段）
+   d. 提取关系（外键、关联关系、多对多中间表、级联规则）
+   e. 提取枚举（枚举名、值、业务含义）
+   f. 提取生命周期规则（创建/更新/删除钩子、软删除、归档策略）
+   g. 生成 Mermaid ER 图
+   h. 按 `templates/data-model.md` 模板写入 `data-model/modules/<module>.md`
+4. 生成 `data-model/_index.md`（模块清单 + ER 总图 + frontmatter）
+
+## `_index.md` frontmatter
+
+```yaml
+---
+project: <project>
+dimension: data-model
+date: YYYY-MM-DD
+status: unprocessed
+tags: [...]
+---
+```
+
+## 模板
+
+遵循 `templates/data-model.md` 定义的必含章节和质量要求。
+
+## 关键原则
+
+- **从代码出发，不从 schema 出发：** 数据库 schema 缺少业务语义，必须从代码中补充约束含义和生命周期规则
+- **约束信息不可省略：** 字段的唯一性、非空、默认值是数据完整性的基础，缺一不可
+- **关系必须标注级联规则：** 级联删除/更新的行为直接影响数据安全，必须明确记录

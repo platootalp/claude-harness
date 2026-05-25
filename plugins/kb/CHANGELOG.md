@@ -4,6 +4,8 @@
 
 ### Added
 - scan skill：代码库结构梳理，产出 `_map.md` 作为 Extract 管道起点
+- extract-data-model skill：读取结构地图，逐模块提取数据模型文档（实体、字段、关系、枚举、生命周期）
+- extract-data-model 模板：data-model.md，定义数据模型文档的必含章节和质量要求
 
 ## [0.1.0] - 2026-05-25
 
