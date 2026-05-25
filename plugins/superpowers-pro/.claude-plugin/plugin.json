@@ -2,6 +2,6 @@
   "name": "superpowers-pro",
   "version": "0.1.0",
   "description": "Structured development workflows for coding agents — feature development, debugging, code review, and more. Enhanced version of superpowers with additional workflow skills.",
-  "author": "platootalp",
+  "author": { "name": "platootalp" },
   "license": "MIT"
 }
