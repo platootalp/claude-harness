@@ -15,13 +15,14 @@ description: 当需要在已转化的 wiki 页面之间建立交叉引用、发�
 
 | 参数 | 必填 | 默认值 | 说明 |
 |------|------|--------|------|
-| `--project <name>` | 是 | — | 项目名称，对应 `data/wiki/<project>/` 目录 |
+| `--project <name>` | 是 | — | 项目名称，对应 `{KB_DATA_ROOT}/wiki/<project>/` 目录 |
+| `--kb-data-root <path>` | 否 | `data` | 知识库数据根目录，所有路径基于此 |
 
 ## 输出
 
 - 更新所有 wiki 页面的交叉引用部分
 - 新增综合分析页面（跨维度的 synthesis 页面）
-- 更新 `data/wiki/<project>/overview.md`
+- 更新 `{KB_DATA_ROOT}/wiki/<project>/overview.md`
 
 ## 反模式
 
@@ -34,7 +35,7 @@ description: 当需要在已转化的 wiki 页面之间建立交叉引用、发�
 
 ## 执行流程
 
-1. 扫描 `data/wiki/<project>/` 下所有 wiki 页面
+1. 扫描 `{KB_DATA_ROOT}/wiki/<project>/` 下所有 wiki 页面
 2. 构建实体-概念映射表
 3. 发现跨维度关联（同一实体在不同维度的描述）
 4. 发现跨模块关联（不同模块之间的隐式依赖）
