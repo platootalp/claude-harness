@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0] - 2026-05-25
+
+### Fixed
+
+- **输出目录错误**：所有 skill/agent/command 的数据路径改为基于 `KB_DATA_ROOT` 绝对路径，不再依赖 CWD
+- **子代理粒度过粗**：extract-agent 从维度级改为模块级，每个子代理只处理一个模块，覆盖率从 5-10% 提升到 100%
+- **文档质量不足**：增加质量约束（Mermaid 图 ≥ 3/模块、对比表格、量化权衡、边界条件）和验收标准勾选框
+- **模板双源问题**：extract-* skill 的模板必含章节内联到 skill 中，删除 templates/ 子目录
+
+### Changed
+
+- `/kb` command 增加 `KB_DATA_ROOT` 路径计算逻辑和模块级派发
+- extract-agent 改为单模块提取（新增 `--module` 和 `--kb-data-root` 参数）
+- transform-agent 增加 `--kb-data-root` 参数
+- ingest skill 深化转化指导（重组而非复制）
+
 ## [0.5.0] - 2026-05-25
 
 ### Changed

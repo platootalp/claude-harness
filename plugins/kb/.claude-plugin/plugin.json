@@ -1,6 +1,6 @@
 {
   "name": "kb",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "知识库管理插件 — 从代码仓库提取、转化、加载和呈现知识",
   "author": { "name": "superpowers" },
   "license": "MIT"
