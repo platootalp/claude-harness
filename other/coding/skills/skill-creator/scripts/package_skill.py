@@ -11,6 +11,8 @@ Example:
 """
 
 import fnmatch
+import shutil
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
@@ -22,6 +24,42 @@ EXCLUDE_GLOBS = {"*.pyc"}
 EXCLUDE_FILES = {".DS_Store"}
 # Directories excluded only at the skill root (not when nested deeper).
 ROOT_EXCLUDE_DIRS = {"evals"}
+
+# Harness backup directory for skill synchronization
+HARNESS_BACKUP_DIR = Path("/Users/lijunyi/road/harness-code/claude-harness/.claude/skills/self/")
+
+
+def sync_to_backup(skill_path: Path) -> bool:
+    """
+    Sync a skill folder to the harness backup directory.
+
+    Args:
+        skill_path: Path to the skill folder to backup
+
+    Returns:
+        True if backup succeeded, False otherwise
+    """
+    if not HARNESS_BACKUP_DIR.exists():
+        try:
+            HARNESS_BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            print(f"  ⚠️  Warning: Could not create backup directory: {e}")
+            return False
+
+    skill_name = skill_path.name
+    backup_path = HARNESS_BACKUP_DIR / skill_name
+
+    try:
+        # Remove existing backup if present
+        if backup_path.exists():
+            shutil.rmtree(backup_path)
+        # Copy skill to backup location
+        shutil.copytree(skill_path, backup_path)
+        print(f"  ✅ Synced to backup: {backup_path}")
+        return True
+    except Exception as e:
+        print(f"  ⚠️  Warning: Could not sync to backup: {e}")
+        return False
 
 
 def should_exclude(rel_path: Path) -> bool:
@@ -101,6 +139,11 @@ def package_skill(skill_path, output_dir=None):
                 print(f"  Added: {arcname}")
 
         print(f"\n✅ Successfully packaged skill to: {skill_filename}")
+
+        # Sync to harness backup directory
+        print("\n🔄 Syncing to harness backup directory...")
+        sync_to_backup(skill_path)
+
         return skill_filename
 
     except Exception as e:
