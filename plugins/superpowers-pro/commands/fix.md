@@ -35,7 +35,7 @@ effort: high
 
 ## Step 1/8: DIAGNOSE
 
-调用 `superpowers:systematic-debugging` skill 的 Phase 1-3（仅调查，不修复）。
+调用 `superpowers-pro:systematic-debugging` skill 的 Phase 1-3（仅调查，不修复）。
 
 - Phase 1 — 根因调查:
   - 读错误信息
@@ -93,7 +93,7 @@ effort: high
 
 ## Step 3/8: PLAN
 
-调用 `superpowers:writing-plans` skill。
+调用 `superpowers-pro:writing-plans` skill。
 
 - 将修复方案拆解为 bite-sized 任务（每步 2-5 分钟，TDD 取向）
 - 无占位符
@@ -105,7 +105,7 @@ effort: high
 
 ## Step 4/8: ISOLATE
 
-调用 `superpowers:using-git-worktrees` skill。
+调用 `superpowers-pro:using-git-worktrees` skill。
 
 - 检测现有隔离 → 创建 worktree → 安装依赖 → 验证基线测试通过
 
@@ -114,10 +114,10 @@ effort: high
 
 ## Step 5/8: IMPLEMENT
 
-调用 `superpowers:subagent-driven-development` skill。
+调用 `superpowers-pro:subagent-driven-development` skill。
 
 每个 task 强制执行:
-1. `superpowers:test-driven-development` — RED → GREEN → REFACTOR
+1. `superpowers-pro:test-driven-development` — RED → GREEN → REFACTOR
 2. spec reviewer 子代理审查
 3. code quality reviewer 子代理审查
 
@@ -128,7 +128,7 @@ effort: high
 
 ## Step 6/8: REVIEW
 
-调用 `superpowers:requesting-code-review` skill。
+调用 `superpowers-pro:requesting-code-review` skill。
 
 - 派发 final code reviewer 子代理审查整体修复
 - 自动处理反馈: Critical 立即修 → Important 继续前修 → Minor 记录 → 审查者有误反驳
@@ -138,7 +138,7 @@ effort: high
 
 ## Step 7/8: VERIFY
 
-调用 `superpowers:verification-before-completion` skill。
+调用 `superpowers-pro:verification-before-completion` skill。
 
 执行完整门控: IDENTIFY → RUN → READ → VERIFY → ONLY THEN
 

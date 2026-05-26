@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+- 统一插件内所有 `superpowers` 引用为 `superpowers-pro`（skill 调用前缀、文件系统路径、文档路径、品牌文案）
+- 保留 `using-superpowers` skill 功能名、`obra/superpowers` 上游 URL、`You have superpowers` 品牌文案不变
+
 ### Added
 - `prd-generation` skill: 双模式 PRD 生成（头脑风暴 / 竞品对标）
 - `competitive-researcher` subagent: 竞品自动研究 + 分析文档生成

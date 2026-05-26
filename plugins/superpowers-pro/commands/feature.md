@@ -35,7 +35,7 @@ effort: high
 
 ## Step 1/8: BRAINSTORM
 
-调用 `superpowers:brainstorming` skill。
+调用 `superpowers-pro:brainstorming` skill。
 
 - 探索项目上下文（文件、文档、最近提交）
 - 逐一提问澄清需求（一次一问，偏好多选）
@@ -63,20 +63,20 @@ effort: high
 
 ## Step 3/8: PLAN
 
-调用 `superpowers:writing-plans` skill。
+调用 `superpowers-pro:writing-plans` skill。
 
 - 将设计拆解为 bite-sized 任务（每步 2-5 分钟，TDD 取向）
 - 无占位符（TBD/TODO/"implement later" 均禁止）
 - 固定使用 subagent-driven-development，不提供 executing-plans 选项
 - 保存至 `docs/superpowers-pro/plans/YYYY-MM-DD-<feature-name>.md`
-- 计划文档头部标注: `REQUIRED SUB-SKILL: superpowers:subagent-driven-development`
+- 计划文档头部标注: `REQUIRED SUB-SKILL: superpowers-pro:subagent-driven-development`
 
 检查点: `━━━ [✓] Step 3/8: PLAN — 实施计划已产出`
 产出物: `docs/superpowers-pro/plans/YYYY-MM-DD-<feature-name>.md`
 
 ## Step 4/8: ISOLATE
 
-调用 `superpowers:using-git-worktrees` skill。
+调用 `superpowers-pro:using-git-worktrees` skill。
 
 - 检测现有隔离（GIT_DIR vs GIT_COMMON）
 - 优先使用原生 worktree 工具（EnterWorktree）
@@ -89,10 +89,10 @@ effort: high
 
 ## Step 5/8: IMPLEMENT
 
-调用 `superpowers:subagent-driven-development` skill。
+调用 `superpowers-pro:subagent-driven-development` skill。
 
 每个 task 强制执行:
-1. `superpowers:test-driven-development` — RED → GREEN → REFACTOR
+1. `superpowers-pro:test-driven-development` — RED → GREEN → REFACTOR
 2. spec reviewer 子代理审查 — 不通过则 implementer 修复后重新审查
 3. code quality reviewer 子代理审查 — 不通过则 implementer 修复后重新审查
 
@@ -105,7 +105,7 @@ effort: high
 
 ## Step 6/8: REVIEW
 
-调用 `superpowers:requesting-code-review` skill。
+调用 `superpowers-pro:requesting-code-review` skill。
 
 - 派发 final code reviewer 子代理审查整体实现
 - 自动处理反馈:
@@ -119,7 +119,7 @@ effort: high
 
 ## Step 7/8: VERIFY
 
-调用 `superpowers:verification-before-completion` skill。
+调用 `superpowers-pro:verification-before-completion` skill。
 
 执行完整门控:
 1. IDENTIFY — 什么命令能证明完成?
@@ -139,7 +139,7 @@ effort: high
 2. 合并 worktree 分支到初始分支
 3. 合并后运行测试验证 — 失败则自动回滚合并并报告
 4. 推送初始分支到远端
-5. 清理 worktree（仅清理 provenance 目录: `.worktrees/`、`worktrees/`、`~/.config/superpowers/worktrees/`）
+5. 清理 worktree（仅清理 provenance 目录: `.worktrees/`、`worktrees/`、`~/.config/superpowers-pro/worktrees/`）
 6. 删除 feature impl 分支
 
 检查点: `━━━ [✓] Step 8/8: FINISH — 已合并到 <初始分支> 并推送`

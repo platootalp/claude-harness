@@ -35,7 +35,7 @@ effort: high
 
 ## Step 1/8: PRD
 
-调用 `superpowers:prd-generation` skill。
+调用 `superpowers-pro:prd-generation` skill。
 
 - 询问用户选择模式：头脑风暴 / 竞品对标
 - 头脑风暴模式：从想法出发，问答澄清，产出 PRD
@@ -58,7 +58,7 @@ effort: high
 
 ## Step 3/8: ARCHITECT
 
-调用 `superpowers:system-architect` skill。
+调用 `superpowers-pro:system-architect` skill。
 
 - 确认 PRD 就绪（硬门控: 无 PRD 不做架构）
 - 四层架构设计:
@@ -147,7 +147,7 @@ effort: high
 
 ## Step 7/8: VERIFY
 
-调用 `superpowers:verification-before-completion` skill。
+调用 `superpowers-pro:verification-before-completion` skill。
 
 验证内容:
 - build 成功（exit 0）
