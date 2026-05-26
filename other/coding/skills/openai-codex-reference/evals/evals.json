@@ -1,0 +1,38 @@
+{
+  "skill_name": "openai-codex-reference",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "How do I configure Codex hooks to auto-format code after every edit?",
+      "expected_output": "Should provide hooks configuration method including config file format and hook script examples, citing official docs",
+      "files": [],
+      "expectations": [
+        "Fetched Codex hooks documentation",
+        "Explained hooks configuration format",
+        "Provided hook script example"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Codex skills 怎么创建？SKILL.md 的格式是什么？",
+      "expected_output": "Should explain skill directory structure, SKILL.md required fields, and how to trigger skills",
+      "files": [],
+      "expectations": [
+        "Fetched Codex skills documentation",
+        "Explained SKILL.md frontmatter required fields",
+        "Provided skill directory structure example"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "What is AGENTS.md in Codex and how do I use it?",
+      "expected_output": "Should explain the purpose and format of AGENTS.md files in Codex",
+      "files": [],
+      "expectations": [
+        "Fetched Codex AGENTS.md documentation",
+        "Explained AGENTS.md purpose and usage",
+        "Provided example format"
+      ]
+    }
+  ]
+}

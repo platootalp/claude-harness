@@ -1,0 +1,26 @@
+{
+  "entries": [
+    { "pattern": ".cursor/**", "reason": "cursor 下 AI 相关物料" },
+    { "pattern": "src/apis/**", "reason": "mbf api 自动生成" },
+    { "pattern": "src/auto-apis/**", "reason": "自动生成接口目录" },
+    { "pattern": "src/mbfApis/**", "reason": "自动生成接口目录" },
+    { "pattern": "src/mbf-apis/**", "reason": "自动生成接口目录" },
+    { "pattern": "src/autoApi/**", "reason": "自动生成接口目录" },
+    { "pattern": "src/autoApis/**", "reason": "自动生成接口目录" },
+    { "pattern": "package-lock.json", "reason": "依赖锁文件" },
+    { "pattern": "package.json", "reason": "包配置文件" },
+    { "pattern": ".husky/**", "reason": "git hooks 脚本" },
+    { "pattern": "openspec/**", "reason": "openspec AI spec 生成文件" },
+    { "pattern": "**/*.excalidraw", "reason": "图表设计文件" },
+    { "pattern": "**/*.html", "reason": "HTML 产物文件" },
+    { "pattern": "**/*.log", "reason": "日志文件" },
+    { "pattern": "**/*.md", "reason": "markdown 文件" },
+    { "pattern": "**/*.json", "reason": "json 文件" },
+    { "pattern": "scripts/precommit-ai-review.mjs", "reason": "AI review 产物脚本" },
+    { "pattern": "scripts/ai-review-prompt.txt", "reason": "AI review 提示词产物" },
+    { "pattern": "yarn.lock", "reason": "依赖锁文件" },
+    { "pattern": "pub_static/**", "reason": "静态产物目录" },
+    { "pattern": ".gradle/**", "reason": "gradle 目录" },
+    { "pattern": ".idea/**", "reason": "IDE 配置目录" }
+  ]
+}
