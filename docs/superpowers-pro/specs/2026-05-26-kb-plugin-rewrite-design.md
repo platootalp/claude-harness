@@ -9,7 +9,7 @@
 ## 1. 设计目标
 
 1. **画像驱动**：先扫描仓库特征，再决定生成什么文档——不同仓库产出不同文档集
-2. **深度提取**：每份文档有专属深度模板，产出架构决策级分析，而非结构罗列
+2. **复杂度驱动深度**：基础文档保证覆盖面，深度文档从代码复杂度热点中"长出来"——不是固定模板，而是从代码中发现的具体问题/模式
 3. **三层产出**：raw（原始提取）→ wiki（整合文档）→ graph（知识图谱），站点三视图展示
 4. **可校验可增量**：每阶段输入/输出有明确 schema，支持单阶段重跑
 
@@ -24,14 +24,14 @@
 │  Stage 1: SCAN                                              │
 │  输入: 仓库根目录                                            │
 │  输出: repo-profile.json                                     │
-│  职责: 结构扫描 + 框架识别 + 能力检测 → 仓库画像              │
+│  职责: 结构扫描 + 框架识别 + 能力检测 + 复杂度热点发现        │
 └──────────────────────┬──────────────────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  Stage 2: PLAN                                              │
 │  输入: repo-profile.json                                     │
 │  输出: doc-plan.json                                         │
-│  职责: 画像驱动 → 决定生成哪些文档 + 每份文档的提取参数        │
+│  职责: 基础文档 + 深度文档规划（复杂度热点驱动）               │
 └──────────────────────┬──────────────────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -80,20 +80,20 @@ SCAN → PLAN → EXTRACT              TRANSFORM → LOAD → 站点
 
 | 维度 | 现有 | 重写后 |
 |------|------|--------|
-| 维度划分 | 固定 5 维（topology/api/data-model/flows/concepts） | 画像驱动，动态文档集 |
-| Scan 输出 | 文件列表 + 语言统计 | repo-profile.json（仓库画像） |
-| 中间编排 | 无（直接跑所有 extract） | doc-plan.json（文档规划） |
-| Extract 产出 | 自由格式 Markdown | 深度模板驱动的结构化 Markdown |
+| 维度划分 | 固定 5 维（topology/api/data-model/flows/concepts） | 基础文档（固定）+ 深度文档（复杂度热点驱动） |
+| Scan 输出 | 文件列表 + 语言统计 | repo-profile.json（仓库画像 + 复杂度热点） |
+| 中间编排 | 无（直接跑所有 extract） | doc-plan.json（基础文档 + 深度文档规划） |
+| Extract 产出 | 自由格式 Markdown | 统一骨架 + 热点类型指引驱动的结构化 Markdown |
 | Transform | 仅 cross-ref 关联 | 交叉引用 + 一致性校验 + 术语归一 + 文档编排 |
 | 站点数据源 | raw + wiki + graph | raw + wiki + graph（保持三视图） |
 
 ---
 
-## 3. Stage 1: SCAN — 仓库画像
+## 3. Stage 1: SCAN — 仓库画像与复杂度热点
 
 ### 3.1 职责
 
-扫描仓库，产出结构化画像。**只观察，不决策**——决策留给 PLAN 阶段。
+扫描仓库，产出结构化画像 **和复杂度热点**。只观察，不决策——决策留给 PLAN 阶段。
 
 ### 3.2 扫描内容
 
@@ -103,8 +103,9 @@ SCAN → PLAN → EXTRACT              TRANSFORM → LOAD → 站点
 | 仓库类型 | backend/frontend/sdk/platform/agent/tool | 框架特征 + 目录结构 + 入口模式 |
 | 代码组织 | 分层架构 / DDD / Clean Arch / 模块化单体 / Monorepo | 目录模式匹配 + 层间依赖检测 |
 | 能力特征 | has_api / has_db / has_queue / has_auth / has_plugin_system / has_agent_runtime / has_workflow / has_frontend / has_scheduler / has_ai | 特征文件 + 目录 + 依赖包检测 |
-| 复杂度 | 模块数量 / 包深度 / 入口数量 / 调用链长度 / 外部依赖数量 | 文件统计 + import 分析 |
+| 复杂度指标 | 模块数量 / 包深度 / 入口数量 / 调用链长度 / 外部依赖数量 | 文件统计 + import 分析 |
 | 关键资产 | API 入口 / 数据模型 / 配置文件 / 部署描述 | 路径模式匹配 |
+| **复杂度热点** | 复杂状态机 / 深层调用链 / 核心抽象 / 一致性机制 / 工作流 / 并发模式 | 模式检测 + 结构分析 |
 
 ### 3.3 仓库类型识别规则
 
@@ -128,13 +129,86 @@ SCAN → PLAN → EXTRACT              TRANSFORM → LOAD → 站点
 }
 ```
 
-### 3.4 repo-profile.json Schema
+### 3.4 复杂度热点发现
+
+**这是 SCAN 阶段的核心新增能力。**
+
+复杂度热点不是"模块 A 有 50 个文件"——而是"模块 A 中的订单状态机有 8 种状态、15 条转换、3 种异常分支，是整个系统最核心也最脆弱的部分"。
+
+#### 3.4.1 热点类型
+
+| 热点类型 | 识别信号 | 典型场景 |
+|----------|----------|----------|
+| `state_machine` | 多个状态字段 + 状态转换方法 + 状态校验逻辑 | 订单状态流转、审批流、发布流程 |
+| `call_chain` | 深层调用（>4 层）+ 跨模块/服务调用 + 异步回调 | 支付链路、数据管道、Agent 调度循环 |
+| `core_abstraction` | 抽象层 + 多种实现 + 注册/发现机制 + 生命周期管理 | 插件系统、Tool 体系、策略模式集群 |
+| `consistency` | 事务管理 + 补偿逻辑 + 幂等设计 + 最终一致性保障 | 分布式事务、数据同步、缓存一致性 |
+| `workflow` | 步骤编排 + 检查点 + 条件分支 + 回滚逻辑 | TDD 工作流、CI/CD、Skill 编排 |
+| `concurrency` | 锁机制 + 并发控制 + 异步队列 + 竞态条件处理 | 并发调度、资源池、消息消费 |
+| `data_pipeline` | 多源输入 + 转换链 + 输出路由 + 错误恢复 | ETL 管道、数据同步、日志处理 |
+| `security_boundary` | 权限检查 + 审批机制 + 沙箱隔离 + 资源访问控制 | Tool 权限、多租户隔离、API 鉴权 |
+
+#### 3.4.2 热点识别方法
+
+```
+对每个模块:
+  1. 扫描文件结构 → 识别模式信号
+     - state_machine: 搜索 status/state 字段 + transition/advance/flow 方法
+     - call_chain: 追踪入口调用的深度 + 跨模块调用次数
+     - core_abstraction: 识别 interface/abstract + impl/adapter 目录结构
+     - consistency: 搜索 transaction/compensate/idempotent 关键词
+     - workflow: 识别 step/checkpoint/phase/rollback 模式
+     - concurrency: 识别 lock/mutex/queue/async/await/semaphore
+     - data_pipeline: 识别 source/transform/sink/pipeline 模式
+     - security_boundary: 识别 permission/authorize/sandbox/isolate
+
+  2. 评估复杂度
+     - 状态数 × 转换数 × 异常分支数 → state_machine 复杂度
+     - 调用深度 × 跨模块数 × 异步比例 → call_chain 复杂度
+     - 实现数 × 交互点 × 生命周期步骤 → core_abstraction 复杂度
+     - ...
+
+  3. 过滤阈值
+     - 复杂度低于阈值的热点不输出（避免简单模式被标记为热点）
+     - 同一模块的多个热点合并（如一个模块既有状态机又有调用链）
+
+  4. 生成热点描述
+     - 一句话说明这个热点为什么复杂
+     - 涉及的关键文件
+     - 建议的深度文档标题
+```
+
+#### 3.4.3 热点示例
+
+**订单系统**：
+```json
+{
+  "type": "state_machine",
+  "module": "order",
+  "description": "订单状态机有 8 种状态、15 条转换路径，含支付回调异常、超时取消、部分退款等边界场景",
+  "key_files": ["src/order/order.entity.ts", "src/order/order.service.ts", "src/order/state-machine.ts"],
+  "suggested_title": "订单生命周期深度解析"
+}
+```
+
+**Claude Code 插件项目**：
+```json
+{
+  "type": "core_abstraction",
+  "module": "plugins",
+  "description": "插件系统有 skills/agents/hooks/commands/MCP 五种扩展点，每种有独立生命周期和交互协议",
+  "key_files": ["plugins/superpowers-pro/skills/", "plugins/kb/agents/", "plugins/kb/hooks/"],
+  "suggested_title": "插件机制深度解析"
+}
+```
+
+### 3.5 repo-profile.json Schema
 
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["repo_name", "repo_type", "primary_language", "frameworks", "architecture_style", "complexity_level", "capabilities", "entry_points", "modules"],
+  "required": ["repo_name", "repo_type", "primary_language", "frameworks", "architecture_style", "complexity_level", "capabilities", "entry_points", "modules", "complexity_hotspots"],
   "properties": {
     "repo_name": { "type": "string" },
     "repo_type": {
@@ -204,6 +278,23 @@ SCAN → PLAN → EXTRACT              TRANSFORM → LOAD → 站点
     "deployment_type": {
       "type": "string",
       "enum": ["containerized", "serverless", "bare_metal", "static", "cli_tool"]
+    },
+    "complexity_hotspots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "module", "description", "key_files", "suggested_title"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["state_machine", "call_chain", "core_abstraction", "consistency", "workflow", "concurrency", "data_pipeline", "security_boundary"]
+          },
+          "module": { "type": "string" },
+          "description": { "type": "string", "description": "一句话说明为什么这个热点值得深度分析" },
+          "key_files": { "type": "array", "items": { "type": "string" } },
+          "suggested_title": { "type": "string", "description": "建议的深度文档标题" }
+        }
+      }
     }
   }
 }
@@ -211,15 +302,17 @@ SCAN → PLAN → EXTRACT              TRANSFORM → LOAD → 站点
 
 ---
 
-## 4. Stage 2: PLAN — 文档规划
+## 4. Stage 2: PLAN — 基础文档 + 深度文档规划
 
 ### 4.1 职责
 
-基于仓库画像，决定生成哪些文档、每份文档的提取参数、文档间编排顺序。
+基于仓库画像和复杂度热点，规划两类文档：
+1. **基础文档**：固定的小集合，保证覆盖面
+2. **深度文档**：从复杂度热点生长，标题和范围由热点决定
 
 ### 4.2 文档类型体系
 
-#### 4.2.1 通用文档（所有仓库必须生成）
+#### 4.2.1 基础文档（所有仓库必须生成）
 
 | ID | 文档名 | 编号 | 说明 |
 |----|--------|------|------|
@@ -228,64 +321,41 @@ SCAN → PLAN → EXTRACT              TRANSFORM → LOAD → 站点
 | `risk` | 风险与技术债 | 11 | 高复杂度模块、强耦合、技术债、改造建议 |
 | `glossary` | 术语表 | 12 | 业务术语、技术术语、缩写、同义词映射 |
 
-#### 4.2.2 条件文档（根据能力特征动态生成）
+**为什么只保留 4 份基础文档？**
 
-| ID | 文档名 | 编号 | 生成条件 |
-|----|--------|------|----------|
-| `architecture` | 架构设计 | 03 | modules > 3 OR 存在分层结构 OR 存在多服务调用 |
-| `domain` | 领域与业务 | 04 | 存在 DDD 特征 OR 存在复杂业务状态 OR 存在多个聚合 |
-| `flows` | 核心流程 | 05 | 存在复杂调用链 OR 存在工作流 OR 存在任务执行链 |
-| `api` | 接口设计 | 06 | has_api |
-| `data` | 数据设计 | 07 | has_database OR has_cache OR has_file_storage |
-| `config` | 配置与运行 | 08 | 存在配置文件 OR 环境变量 OR docker-compose |
-| `deployment` | 部署与运维 | 09 | 存在 Docker/K8S OR CI/CD OR Helm |
-| `testing` | 测试与质量 | 10 | 存在测试目录 OR CI 测试 OR Mock 框架 |
+原来设计有 12-18 种通用模板（架构设计、领域与业务、核心流程、接口设计、数据设计...），但问题是：同一个模板套在不同仓库上要么太空（没有领域模型的仓库生成"领域与业务"文档），要么太浅（有复杂领域模型的仓库用一个通用模板无法覆盖）。通用模板只能回答"有什么"，不能回答"难点在哪"。
 
-#### 4.2.3 Agent/Platform 专用文档
+深度文档承担了这个责任——它不是"架构设计"这种笼统的标题，而是"订单生命周期深度解析"、"Agent 调度循环深度解析"这种从代码中长出来的具体标题。
 
-| ID | 文档名 | 编号 | 生成条件 |
-|----|--------|------|----------|
-| `agent_system` | Agent 架构 | 03a | has_agent_runtime |
-| `tool_system` | Tool 体系 | 04a | has_tool_system |
-| `plugin_system` | 插件系统 | 05a | has_plugin_system |
-| `context_system` | 上下文系统 | 06a | has_context_management |
-| `workflow_system` | 工作流系统 | 07a | has_workflow_engine |
-| `workspace` | Workspace 架构 | 02a | is_monorepo（architecture_style = monorepo） |
+#### 4.2.2 深度文档（从复杂度热点生长）
 
-**编号规则**：通用文档固定编号（01-12），专用文档用字母后缀（02a, 03a...），在 wiki 编排时按逻辑顺序插入。
+深度文档不是预设的固定列表——每个仓库的深度文档都不一样。
 
-### 4.3 文档规划决策树
+**生成规则**：repo-profile.json 中的每个 complexity_hotspot 生成一份深度文档。
 
-```
-repo-profile.json
-    │
-    ├─ 必出: overview, structure, risk, glossary
-    │
-    ├─ 通用条件文档:
-    │   ├─ modules > 3 → architecture
-    │   ├─ has_domain_features → domain
-    │   ├─ has_complex_flows → flows
-    │   ├─ has_api → api
-    │   ├─ has_database OR has_cache → data
-    │   ├─ has_config → config
-    │   ├─ has_deployment → deployment
-    │   └─ has_tests → testing
-    │
-    └─ Agent/Platform 专用文档:
-        ├─ is_monorepo → workspace
-        ├─ has_agent_runtime → agent_system
-        ├─ has_tool_system → tool_system
-        ├─ has_plugin_system → plugin_system
-        ├─ has_context_management → context_system
-        └─ has_workflow_engine → workflow_system
-```
+**文档标题**：取自热点的 `suggested_title` 字段。
 
-**互斥规则**：
-- `agent_system` 与 `architecture` 互斥：若 has_agent_runtime，用 agent_system 替代 architecture
-- `tool_system` 与 `domain` 可共存但有优先级：has_tool_system 时 tool_system 优先
-- `workspace` 与 `structure` 共存：workspace 是 structure 的扩展，编号紧接其后
+**文档编号**：从 03 开始，按逻辑顺序编排（overview=01, structure=02, 深度文档=03/04/05/..., risk=11, glossary=12）。
 
-### 4.4 doc-plan.json Schema
+**示例**：
+
+**订单系统**的深度文档：
+| 编号 | 标题 | 来源热点 |
+|------|------|----------|
+| 03 | 订单生命周期深度解析 | state_machine: 订单状态机 |
+| 04 | 支付回调异常处理 | call_chain: 支付链路 |
+| 05 | 库存一致性保障机制 | consistency: 库存扣减 |
+| 06 | 接口设计 | call_chain: API 调用链 |
+
+**Claude Code 插件项目**的深度文档：
+| 编号 | 标题 | 来源热点 |
+|------|------|----------|
+| 03 | Agent 调度循环深度解析 | call_chain: Agent 执行循环 |
+| 04 | Skill 编排检查点机制 | workflow: Skill 工作流 |
+| 05 | 插件机制深度解析 | core_abstraction: 插件系统 |
+| 06 | Tool 权限审批流程 | security_boundary: Tool 权限 |
+
+### 4.3 doc-plan.json Schema
 
 ```json
 {
@@ -298,17 +368,32 @@ repo-profile.json
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "title", "number", "reason"],
+        "required": ["id", "type", "title", "number", "reason"],
         "properties": {
-          "id": { "type": "string", "description": "文档类型 ID，如 overview, architecture, agent_system" },
+          "id": { "type": "string", "description": "文档唯一标识" },
+          "type": {
+            "type": "string",
+            "enum": ["baseline", "deep_analysis"],
+            "description": "baseline=基础文档，deep_analysis=深度文档"
+          },
           "title": { "type": "string" },
-          "number": { "type": "string", "description": "编排编号，如 01, 02a, 03" },
+          "number": { "type": "string", "description": "编排编号，如 01, 03, 11" },
           "reason": { "type": "string", "description": "为什么生成这份文档" },
-          "scope_hint": { "type": "string", "description": "提取时的范围提示，如 '重点分析 agent 调度循环和 tool routing'" },
+          "hotspot_type": {
+            "type": "string",
+            "description": "深度文档对应的热点类型（仅 deep_analysis 类型）",
+            "enum": ["state_machine", "call_chain", "core_abstraction", "consistency", "workflow", "concurrency", "data_pipeline", "security_boundary"]
+          },
+          "scope_hint": { "type": "string", "description": "提取时的范围提示" },
+          "key_files": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "深度文档涉及的关键文件（仅 deep_analysis 类型）"
+          },
           "depends_on": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "依赖的其他文档 ID（用于提取顺序编排）"
+            "description": "依赖的其他文档 ID"
           }
         }
       }
@@ -322,7 +407,7 @@ repo-profile.json
 }
 ```
 
-### 4.5 doc-plan 示例
+### 4.4 doc-plan 示例
 
 **Claude Code 插件项目（agentic_platform）**：
 
@@ -330,65 +415,56 @@ repo-profile.json
 {
   "profile_ref": "repo-profile.json",
   "documents": [
-    { "id": "overview", "title": "项目总览", "number": "01", "reason": "通用必出" },
-    { "id": "structure", "title": "仓库结构", "number": "02", "reason": "通用必出" },
-    { "id": "workspace", "title": "Workspace 架构", "number": "02a", "reason": "is_monorepo", "scope_hint": "重点分析 plugins/ 和 skills/ 的组织边界" },
-    { "id": "agent_system", "title": "Agent 架构", "number": "03a", "reason": "has_agent_runtime", "scope_hint": "分析 agent 调度循环、子代理派发、上下文管理", "depends_on": ["overview", "structure"] },
-    { "id": "tool_system", "title": "Tool 体系", "number": "04a", "reason": "has_tool_system", "scope_hint": "分析 tool 注册、路由、权限、shell/file/web tools", "depends_on": ["agent_system"] },
-    { "id": "plugin_system", "title": "插件系统", "number": "05a", "reason": "has_plugin_system", "scope_hint": "分析 skills/agents/hooks/commands/MCP 的生命周期和交互", "depends_on": ["agent_system"] },
-    { "id": "context_system", "title": "上下文系统", "number": "06a", "reason": "has_context_management", "scope_hint": "分析 CLAUDE.md 层级、memory、prompt 注入、语义检索", "depends_on": ["agent_system"] },
-    { "id": "workflow_system", "title": "工作流系统", "number": "07a", "reason": "has_workflow_engine", "scope_hint": "分析 skill 编排、检查点、条件分支", "depends_on": ["plugin_system"] },
-    { "id": "risk", "title": "风险与技术债", "number": "11", "reason": "通用必出", "depends_on": ["agent_system", "tool_system", "plugin_system"] },
-    { "id": "glossary", "title": "术语表", "number": "12", "reason": "通用必出" }
+    { "id": "overview", "type": "baseline", "title": "项目总览", "number": "01", "reason": "基础文档" },
+    { "id": "structure", "type": "baseline", "title": "仓库结构", "number": "02", "reason": "基础文档" },
+    { "id": "agent-loop", "type": "deep_analysis", "title": "Agent 调度循环深度解析", "number": "03", "reason": "核心调度机制，整个系统的心脏", "hotspot_type": "call_chain", "scope_hint": "追踪 Agent 从接收消息到完成响应的完整循环，包括 plan→execute→observe→reflect 各阶段的决策逻辑", "key_files": ["src/agent/loop.ts", "src/agent/planner.ts", "src/agent/executor.ts"], "depends_on": ["overview", "structure"] },
+    { "id": "skill-orchestration", "type": "deep_analysis", "title": "Skill 编排检查点机制", "number": "04", "reason": "工作流驱动系统，定义了开发流程的硬性约束", "hotspot_type": "workflow", "scope_hint": "分析 skill 的步骤编排、检查点机制、条件分支、失败回滚", "key_files": ["plugins/superpowers-pro/skills/brainstorming/SKILL.md", "plugins/superpowers-pro/skills/test-driven-development/SKILL.md"], "depends_on": ["overview"] },
+    { "id": "plugin-system", "type": "deep_analysis", "title": "插件机制深度解析", "number": "05", "reason": "五种扩展点（skills/agents/hooks/commands/MCP）有独立生命周期和交互协议", "hotspot_type": "core_abstraction", "scope_hint": "分析插件的发现、加载、生命周期、扩展点契约、安全隔离", "key_files": ["plugins/superpowers-pro/", "plugins/kb/"], "depends_on": ["agent-loop"] },
+    { "id": "tool-permission", "type": "deep_analysis", "title": "Tool 权限审批流程", "number": "06", "reason": "权限边界决定了 Agent 能做什么、不能做什么", "hotspot_type": "security_boundary", "scope_hint": "分析 tool 调用的权限控制、用户审批机制、沙箱隔离", "key_files": ["src/tools/permission.ts", "src/tools/sandbox.ts"], "depends_on": ["agent-loop"] },
+    { "id": "risk", "type": "baseline", "title": "风险与技术债", "number": "11", "reason": "基础文档", "depends_on": ["agent-loop", "plugin-system", "tool-permission"] },
+    { "id": "glossary", "type": "baseline", "title": "术语表", "number": "12", "reason": "基础文档" }
   ],
-  "extraction_order": ["overview", "structure", "workspace", "agent_system", "tool_system", "plugin_system", "context_system", "workflow_system", "risk", "glossary"]
+  "extraction_order": ["overview", "structure", "glossary", "agent-loop", "skill-orchestration", "plugin-system", "tool-permission", "risk"]
 }
 ```
 
-**Spring Boot 后端服务**：
+**订单系统（backend_service）**：
 
 ```json
 {
   "profile_ref": "repo-profile.json",
   "documents": [
-    { "id": "overview", "title": "项目总览", "number": "01", "reason": "通用必出" },
-    { "id": "structure", "title": "仓库结构", "number": "02", "reason": "通用必出" },
-    { "id": "architecture", "title": "架构设计", "number": "03", "reason": "modules > 3 + 分层结构", "scope_hint": "重点分析 Controller-Service-Repository 分层和模块间依赖", "depends_on": ["overview", "structure"] },
-    { "id": "domain", "title": "领域与业务", "number": "04", "reason": "存在 DDD 特征 + 复杂业务状态", "depends_on": ["architecture"] },
-    { "id": "flows", "title": "核心流程", "number": "05", "reason": "存在复杂调用链", "depends_on": ["architecture", "domain"] },
-    { "id": "api", "title": "接口设计", "number": "06", "reason": "has_api", "depends_on": ["architecture"] },
-    { "id": "data", "title": "数据设计", "number": "07", "reason": "has_database", "depends_on": ["domain"] },
-    { "id": "config", "title": "配置与运行", "number": "08", "reason": "存在 application.yml", "depends_on": ["overview"] },
-    { "id": "risk", "title": "风险与技术债", "number": "11", "reason": "通用必出", "depends_on": ["architecture", "domain", "flows"] },
-    { "id": "glossary", "title": "术语表", "number": "12", "reason": "通用必出" }
+    { "id": "overview", "type": "baseline", "title": "项目总览", "number": "01", "reason": "基础文档" },
+    { "id": "structure", "type": "baseline", "title": "仓库结构", "number": "02", "reason": "基础文档" },
+    { "id": "order-lifecycle", "type": "deep_analysis", "title": "订单生命周期深度解析", "number": "03", "reason": "8 种状态、15 条转换、3 种异常分支——系统最核心也最脆弱的部分", "hotspot_type": "state_machine", "scope_hint": "追踪订单从创建到完成的全生命周期，包括支付回调异常、超时取消、部分退款等边界场景", "key_files": ["src/order/order.entity.ts", "src/order/order.service.ts", "src/order/state-machine.ts"], "depends_on": ["overview", "structure"] },
+    { "id": "payment-callback", "type": "deep_analysis", "title": "支付回调异常处理", "number": "04", "reason": "调用链跨越 3 个服务，有异步回调和重试逻辑", "hotspot_type": "call_chain", "scope_hint": "追踪支付发起→第三方回调→订单状态变更→库存确认的完整链路", "key_files": ["src/payment/payment.service.ts", "src/payment/callback.controller.ts"], "depends_on": ["order-lifecycle"] },
+    { "id": "inventory-consistency", "type": "deep_analysis", "title": "库存一致性保障机制", "number": "05", "reason": "库存扣减+订单创建需要分布式事务保障，有补偿逻辑", "hotspot_type": "consistency", "scope_hint": "分析库存扣减的事务策略、失败场景、补偿机制、幂等设计", "key_files": ["src/inventory/inventory.service.ts", "src/inventory/compensation.ts"], "depends_on": ["order-lifecycle"] },
+    { "id": "api-design", "type": "deep_analysis", "title": "接口设计", "number": "06", "reason": "有 30+ HTTP 接口，需要系统化梳理", "hotspot_type": "call_chain", "scope_hint": "按资源分类梳理接口，重点分析鉴权、幂等、错误码", "key_files": ["src/controller/"], "depends_on": ["overview"] },
+    { "id": "risk", "type": "baseline", "title": "风险与技术债", "number": "11", "reason": "基础文档", "depends_on": ["order-lifecycle", "payment-callback", "inventory-consistency"] },
+    { "id": "glossary", "type": "baseline", "title": "术语表", "number": "12", "reason": "基础文档" }
   ],
-  "extraction_order": ["overview", "structure", "config", "architecture", "domain", "flows", "api", "data", "risk", "glossary"]
+  "extraction_order": ["overview", "structure", "glossary", "api-design", "order-lifecycle", "payment-callback", "inventory-consistency", "risk"]
 }
 ```
 
 ---
 
-## 5. Stage 3: EXTRACT — 深度提取
+## 5. Stage 3: EXTRACT — 基础提取 + 深度分析
 
 ### 5.1 职责
 
-根据 doc-plan.json，按文档类型派生子代理，每个子代理使用对应的深度模板提取 raw 文档。
+根据 doc-plan.json，按文档类型派生子代理。基础文档用基础模板，深度文档用统一深度骨架 + 热点类型指引。
 
 ### 5.2 提取策略
 
-**核心改进：从"浅层结构罗列"到"深度分析"**
+**核心设计：两层模板体系**
 
-当前 extract-* 技能的问题：prompt 只告诉 agent "分析什么"（如"分析文件依赖关系"），没告诉 agent"怎么分析"、"分析到什么深度"、"输出什么结构"。
+- **基础文档模板**：4 份固定模板（overview/structure/risk/glossary），每份有专属的分析框架和深度锚点
+- **深度文档模板**：统一深度分析骨架 + 热点类型指引。骨架是所有深度文档共用的写作框架，指引根据热点类型定制分析侧重点
 
-重写后的每个文档类型模板包含：
-1. **分析框架**：告诉 agent 用什么视角分析，分几个步骤
-2. **深度锚点**：每个分析维度必须回答的核心问题（不是可选的，是必须回答的）
-3. **输出结构**：严格的 Markdown 章节骨架 + 每节的必填项
-4. **质量约束**：禁止罗列、要求解释设计意图、要求标注置信度
+### 5.3 统一文档骨架
 
-### 5.3 统一文档模板骨架
-
-所有文档类型的 raw 产出必须遵循：
+所有文档（基础和深度）的 raw 产出必须遵循：
 
 ```markdown
 # {文档标题}
@@ -421,9 +497,247 @@ repo-profile.json
 {链接到其他相关 raw 文档}
 ```
 
-### 5.4 各文档类型的深度模板
+### 5.4 深度分析骨架（所有 deep_analysis 文档共用）
 
-#### 5.4.1 overview — 项目总览
+```markdown
+# {从热点 suggested_title 生成的标题}
+
+> 置信度：{high/medium/low}
+> 分析范围：{hotspot.key_files}
+> 热点类型：{hotspot.type}
+
+## 1. 问题定义
+
+{这个复杂度热点是什么？为什么它难？为什么值得深入理解？}
+
+## 2. 核心结论
+
+{3-5 条关键发现}
+
+## 3. 当前实现
+
+{代码中是如何处理的？逐步追踪关键路径}
+### 3.1 关键路径追踪
+{从入口到出口的完整调用/状态/流转路径，带文件路径和行号}
+### 3.2 核心机制解析
+{支撑这个热点运作的核心机制——不是罗列代码，而是解释设计意图}
+
+## 4. {热点类型专属章节}
+
+{根据 hotspot.type 插入的定制章节，见 5.5}
+
+## 5. 关键设计决策
+
+{设计者做了什么取舍？为什么这样而不是那样？有哪些隐含约束？}
+
+## 6. 异常与边界
+
+{什么情况下会出问题？失败场景有哪些？如何恢复？}
+### 6.1 已知的失败场景
+### 6.2 恢复与补偿机制
+### 6.3 尚未处理的边界
+
+## 7. 典型场景
+
+{至少 2 个具体场景，展示系统在真实使用中的行为}
+
+## 8. 改进方向
+
+{可能的优化方向、风险和成本}
+
+## 9. 代码证据
+
+{关键路径的文件路径 + 行号，带简要说明}
+
+## 10. 相关文档
+
+{链接到其他相关 raw 文档}
+```
+
+### 5.5 热点类型指引
+
+每种热点类型在深度分析骨架的第 4 章插入定制内容：
+
+#### state_machine 指引
+
+**第 4 章：状态流转深度分析**
+
+```markdown
+## 4. 状态流转深度分析
+
+### 4.1 状态定义
+{列出所有状态，每个状态的含义和业务语义}
+
+### 4.2 转换规则
+{列出所有合法的状态转换，每个转换的触发条件}
+| 当前状态 | 目标状态 | 触发事件 | 前置条件 | 实现位置 |
+|----------|----------|----------|----------|----------|
+
+### 4.3 状态转换图
+{Mermaid stateDiagram-v2}
+
+### 4.4 异常状态处理
+{非法状态转换的防护、状态不一致的检测与修复}
+
+### 4.5 状态查询与监控
+{如何查询当前状态、状态变更的审计日志}
+```
+
+#### call_chain 指引
+
+**第 4 章：调用链深度分析**
+
+```markdown
+## 4. 调用链深度分析
+
+### 4.1 调用时序
+{Mermaid sequenceDiagram，展示完整调用链}
+
+### 4.2 各层职责
+{调用链中每个节点的职责和边界}
+
+### 4.3 跨边界调用
+{跨模块/跨服务调用的协议、序列化、错误传播}
+
+### 4.4 超时与重试
+{各环节的超时设置、重试策略、降级方案}
+
+### 4.5 异步与回调
+{异步调用的模式、回调处理、结果聚合}
+```
+
+#### core_abstraction 指引
+
+**第 4 章：抽象体系深度分析**
+
+```markdown
+## 4. 抽象体系深度分析
+
+### 4.1 扩展点清单
+{列出所有扩展点/扩展方式}
+
+### 4.2 生命周期
+{每种实现的创建→初始化→使用→销毁流程}
+
+### 4.3 注册与发现
+{如何注册实现、如何被发现和选择}
+
+### 4.4 交互协议
+{扩展点与宿主的交互接口和契约}
+
+### 4.5 组合与冲突
+{多种扩展点组合使用的规则、冲突检测}
+```
+
+#### consistency 指引
+
+**第 4 章：一致性机制深度分析**
+
+```markdown
+## 4. 一致性机制深度分析
+
+### 4.1 一致性策略
+{使用什么一致性模型？为什么？}
+
+### 4.2 事务边界
+{事务的边界在哪？跨哪些资源？}
+
+### 4.3 失败场景
+{每个步骤可能失败的方式和影响}
+
+### 4.4 补偿机制
+{失败后的补偿逻辑、幂等设计}
+
+### 4.5 最终一致性保障
+{异步场景下如何保证最终一致？对账机制？}
+```
+
+#### workflow 指引
+
+**第 4 章：工作流深度分析**
+
+```markdown
+## 4. 工作流深度分析
+
+### 4.1 步骤编排
+{完整步骤列表、每步的输入/输出/检查点}
+
+### 4.2 条件分支
+{哪些步骤有条件分支？条件是什么？}
+
+### 4.3 检查点机制
+{哪些步骤有硬性检查点？不通过时如何处理？}
+
+### 4.4 回滚策略
+{步骤失败后的回滚逻辑}
+
+### 4.5 并行步骤
+{哪些步骤可以并行执行？如何聚合结果？}
+```
+
+#### concurrency 指引
+
+**第 4 章：并发模型深度分析**
+
+```markdown
+## 4. 并发模型深度分析
+
+### 4.1 并发模型
+{使用什么并发模型？线程池？协程？事件循环？}
+
+### 4.2 锁与同步
+{锁的粒度、类型、获取顺序}
+
+### 4.3 竞态条件
+{可能产生竞态的场景和防护}
+
+### 4.4 死锁检测
+{死锁的可能性和检测/预防机制}
+```
+
+#### data_pipeline 指引
+
+**第 4 章：数据管道深度分析**
+
+```markdown
+## 4. 数据管道深度分析
+
+### 4.1 数据源
+{数据从哪里来？格式是什么？}
+
+### 4.2 转换链
+{每个转换步骤的输入/输出/转换逻辑}
+
+### 4.3 输出路由
+{数据输出到哪里？路由规则？}
+
+### 4.4 错误恢复
+{管道步骤失败时的重试、跳过、补偿策略}
+```
+
+#### security_boundary 指引
+
+**第 4 章：安全边界深度分析**
+
+```markdown
+## 4. 安全边界深度分析
+
+### 4.1 权限模型
+{权限如何定义？角色？策略？}
+
+### 4.2 审批机制
+{什么操作需要审批？审批流程？}
+
+### 4.3 沙箱隔离
+{哪些操作在沙箱中执行？隔离策略？}
+
+### 4.4 资源访问控制
+{文件/网络/进程等资源的访问控制规则}
+```
+
+### 5.6 基础文档模板
+
+#### 5.6.1 overview — 项目总览
 
 **分析框架**：
 
@@ -476,7 +790,7 @@ Step 4: 阅读路径推荐
 ## 8. 相关文档
 ```
 
-#### 5.4.2 structure — 仓库结构
+#### 5.6.2 structure — 仓库结构
 
 **分析框架**：
 
@@ -508,334 +822,14 @@ Step 4: 依赖边界分析
 | 依赖边界 | 模块间依赖是否合理？有没有循环依赖？ |
 | 风险区域 | 哪些目录修改风险高？为什么？ |
 
-#### 5.4.3 architecture — 架构设计
-
-**分析框架**：
-
-```
-Step 1: 分层识别
-  - 识别代码的分层方式（MVC/Clean Arch/DDD/自定义）
-  - 画出分层图
-
-Step 2: 模块依赖分析
-  - 构建模块依赖图
-  - 标注强依赖 vs 弱依赖
-  - 识别循环依赖
-
-Step 3: 调用链路追踪
-  - 从入口追踪核心调用链（至少 3 条）
-  - 画出调用时序
-
-Step 4: 数据流分析
-  - 识别数据从输入到输出的流转路径
-  - 标注数据转换点
-
-Step 5: 设计决策推断
-  - 从代码结构推断设计决策
-  - 解释为什么这样设计，而不是其他方式
-```
-
-**深度锚点**：
-
-| 锚点 | 问题 |
-|------|------|
-| 分层方式 | 什么分层？为什么？每层的边界是什么？ |
-| 模块依赖 | 核心模块依赖谁？谁依赖核心模块？有没有循环？ |
-| 关键调用链 | 最重要的 3 条调用链是什么？经过哪些层？ |
-| 设计决策 | 最关键的设计决策是什么？有什么权衡？ |
-| 架构约束 | 修改代码时必须遵守什么约束？ |
-
-#### 5.4.4 agent_system — Agent 架构
-
-**分析框架**：
-
-```
-Step 1: Agent 生命周期分析
-  - 识别 agent 的创建、调度、执行、销毁流程
-  - 画出 agent 生命周期状态机
-
-Step 2: 调度循环分析
-  - 识别 agent 的核心循环（plan → execute → observe → reflect）
-  - 每个阶段做什么？如何决策下一步？
-
-Step 3: 子代理派发
-  - 识别子代理创建和通信机制
-  - 子代理的上下文隔离策略
-
-Step 4: 上下文管理
-  - 上下文如何构建、注入、裁剪
-  - 上下文窗口管理策略
-
-Step 5: 安全与权限
-  - agent 的权限边界
-  - 工具调用的审批机制
-```
-
-**深度锚点**：
-
-| 锚点 | 问题 |
-|------|------|
-| 调度循环 | agent 的核心执行循环是什么？每步做什么决策？ |
-| 上下文构建 | agent 如何获取和管理局部上下文？ |
-| 子代理通信 | 父子代理如何通信？上下文如何隔离？ |
-| 安全边界 | agent 能做什么？不能做什么？谁审批？ |
-
-#### 5.4.5 tool_system — Tool 体系
-
-**分析框架**：
-
-```
-Step 1: Tool 注册与发现
-  - 识别所有 tool 定义
-  - tool 的注册机制和发现方式
-
-Step 2: Tool 路由
-  - agent 如何选择调用哪个 tool？
-  - 路由决策的输入是什么？
-
-Step 3: Tool 执行
-  - tool 的执行模型（同步/异步/流式）
-  - 输入/输出格式
-  - 错误处理
-
-Step 4: 权限系统
-  - tool 调用的权限控制
-  - 用户审批机制
-```
-
-#### 5.4.6 plugin_system — 插件系统
-
-**分析框架**：
-
-```
-Step 1: 插件生命周期
-  - 插件的发现、加载、初始化、卸载
-  - 插件的注册机制（skills/agents/hooks/commands/MCP）
-
-Step 2: 插件交互模型
-  - 插件与宿主的交互方式
-  - 插件间的通信机制
-
-Step 3: 扩展点
-  - 宿主暴露了哪些扩展点？
-  - 每个扩展点的契约是什么？
-
-Step 4: 安全与隔离
-  - 插件的权限边界
-  - 插件故障的隔离策略
-```
-
-#### 5.4.7 context_system — 上下文系统
-
-**分析框架**：
-
-```
-Step 1: 上下文层级
-  - 识别所有上下文注入点（CLAUDE.md层级、memory、hooks注入）
-  - 上下文的优先级和覆盖规则
-
-Step 2: 上下文构建
-  - 完整上下文如何组装？
-  - 哪些部分是静态的？哪些是动态的？
-
-Step 3: 上下文管理
-  - 上下文窗口溢出时的裁剪策略
-  - 语义检索如何工作？
-
-Step 4: 持久化
-  - 哪些上下文会持久化？
-  - 跨会话的上下文恢复机制
-```
-
-#### 5.4.8 workflow_system — 工作流系统
-
-**分析框架**：
-
-```
-Step 1: 工作流定义
-  - 识别所有工作流/skill 定义
-  - 工作流的步骤、检查点、条件分支
-
-Step 2: 工作流引擎
-  - 工作流的执行模型（线性/DAG/状态机）
-  - 步骤间如何传递数据？
-
-Step 3: 异常处理
-  - 工作流步骤失败时的行为
-  - 回滚和恢复机制
-
-Step 4: 编排能力
-  - 工作流间的组合和嵌套
-  - 并行执行
-```
-
-#### 5.4.9 domain — 领域与业务
-
-**分析框架**：
-
-```
-Step 1: 领域对象识别
-  - 识别核心实体和值对象
-  - 画出领域模型图
-
-Step 2: 聚合边界
-  - 识别聚合根和聚合边界
-  - 聚合间通过什么方式通信？
-
-Step 3: 状态流转
-  - 识别核心业务对象的状态机
-  - 什么事件触发状态变更？
-
-Step 4: 业务规则
-  - 识别关键业务规则（不变式、约束、验证规则）
-  - 规则在哪里实现？
-
-Step 5: 领域事件
-  - 识别领域事件
-  - 事件的发布和消费链路
-```
-
-#### 5.4.10 flows — 核心流程
-
-**分析框架**：
-
-```
-Step 1: 流程识别
-  - 识别所有核心业务流程
-  - 按重要性和复杂度排序
-
-Step 2: 主流程分析
-  - 每个主流程的完整步骤
-  - 关键类和方法
-  - 画出调用时序
-
-Step 3: 分支流程
-  - 条件分支
-  - 异常分支
-
-Step 4: 异常处理
-  - 每个步骤可能失败的方式
-  - 失败后的处理策略
-```
-
-#### 5.4.11 api — 接口设计
-
-**分析框架**：
-
-```
-Step 1: 接口分类
-  - 按类型分类：HTTP / RPC / 消息消费 / CLI / 事件订阅
-
-Step 2: 接口详情
-  - 每个接口：路径、方法、入参、出参、鉴权
-  - 标注幂等性和重试策略
-
-Step 3: 错误码体系
-  - 错误码分类和含义
-  - 错误处理约定
-
-Step 4: 接口演进
-  - 版本策略
-  - 兼容性约束
-```
-
-#### 5.4.12 data — 数据设计
-
-**分析框架**：
-
-```
-Step 1: 存储概览
-  - 列出所有存储层（DB / Cache / File / Queue）
-  - 每个存储层的技术选型和用途
-
-Step 2: 表/集合设计
-  - 核心表结构
-  - 字段含义和约束
-  - 索引设计
-
-Step 3: 数据流转
-  - 数据从哪里来？到哪里去？
-  - 读写路径
-
-Step 4: 一致性策略
-  - 数据一致性保障方式
-  - 缓存失效策略
-```
-
-#### 5.4.13 config — 配置与运行
-
-**分析框架**：
-
-```
-Step 1: 配置结构
-  - 配置文件的组织方式
-  - 配置项分类
-
-Step 2: 环境划分
-  - 不同环境的配置差异
-  - 环境变量管理
-
-Step 3: 本地运行
-  - 完整的本地启动步骤
-  - 前置依赖
-
-Step 4: 排障入口
-  - 常见配置问题
-  - 健康检查方式
-```
-
-#### 5.4.14 deployment — 部署与运维
-
-**分析框架**：
-
-```
-Step 1: 部署架构
-  - 容器化方式
-  - 依赖的基础设施
-
-Step 2: CI/CD
-  - 构建和发布流程
-  - 环境提升策略
-
-Step 3: 监控与告警
-  - 监控指标
-  - 告警规则
-
-Step 4: 故障排查
-  - 常见故障模式
-  - 排查步骤
-```
-
-#### 5.4.15 testing — 测试与质量
-
-**分析框架**：
-
-```
-Step 1: 测试结构
-  - 测试分层（unit/integration/e2e）
-  - 测试目录组织
-
-Step 2: 测试策略
-  - Mock 策略
-  - 测试数据管理
-
-Step 3: 覆盖分析
-  - 覆盖率情况
-  - 覆盖盲区
-
-Step 4: CI 质量门禁
-  - 质量检查项
-  - 门禁规则
-```
-
-#### 5.4.16 risk — 风险与技术债
+#### 5.6.3 risk — 风险与技术债
 
 **分析框架**：
 
 ```
 Step 1: 复杂度热点
-  - 高圈复杂度的模块
-  - 深度嵌套的逻辑
+  - 从 repo-profile.json 的 complexity_hotspots 提取高风险点
+  - 结合已有 deep_analysis 文档的风险发现
 
 Step 2: 耦合分析
   - 强耦合的模块对
@@ -854,7 +848,7 @@ Step 5: 改造建议
   - 每条建议的影响范围和成本估计
 ```
 
-#### 5.4.17 glossary — 术语表
+#### 5.6.4 glossary — 术语表
 
 **分析框架**：
 
@@ -872,54 +866,27 @@ Step 3: 术语关系
   - 术语缩写展开
 ```
 
-#### 5.4.18 workspace — Workspace 架构
-
-**分析框架**：
-
-```
-Step 1: Workspace 结构
-  - apps / packages / tooling / infra 的划分
-  - workspace 依赖原则
-
-Step 2: Package 依赖图
-  - package 间依赖关系
-  - 核心基础包 vs 业务包
-  - 循环依赖检测
-
-Step 3: 构建编排
-  - 构建工具和任务编排（turbo/nx/lerna）
-  - 构建依赖图
-
-Step 4: 共享策略
-  - shared packages 的内容
-  - 版本管理策略
-```
-
-### 5.5 子代理派发策略
-
-**现有方式**：`/kb` 命令直接并行派发 extract-agent 处理各维度。
-
-**重写后方式**：
+### 5.7 子代理派发策略
 
 ```
 doc-plan.json
     │
     ├─ 无依赖的文档（overview, structure, glossary）→ 并行派发
     │
-    └─ 有依赖的文档 → 按依赖顺序串行派发
-       例如：architecture 依赖 overview+structure → 等 overview 和 structure 完成后再派发
+    └─ 有依赖的文档 → 按依赖顺序派发
+       例如：agent-loop 依赖 overview+structure → 等两者完成后再派发
 ```
 
 **并行度控制**：
 
-- 第一波（无依赖）：overview, structure, glossary, workspace — 并行
-- 第二波（依赖第一波）：architecture/agent_system, domain/tool_system, config — 并行
-- 第三波（依赖第二波）：flows/workflow_system, api/plugin_system, data/context_system — 并行
-- 第四波（依赖所有）：risk — 串行
+- 第一波（无依赖）：overview, structure, glossary — 并行
+- 第二波（依赖第一波）：所有 depends_on 仅含第一波文档的深度文档 — 并行
+- 第三波（依赖第二波）：depends_on 含第二波文档的深度文档 — 并行
+- 逐波推进，直到所有文档完成
 
 **依赖信息来源**：doc-plan.json 中每个文档的 `depends_on` 字段。
 
-**上下文传递格式**：被依赖文档完成后，提取其「核心结论」作为后续提取的输入。核心结论的格式：
+**上下文传递格式**：被依赖文档完成后，提取其核心结论作为后续提取的输入：
 
 ```json
 {
@@ -932,7 +899,7 @@ doc-plan.json
 
 后续子代理的 prompt 中注入所有 `depends_on` 文档的核心结论 JSON，而非全文——控制上下文窗口开销。
 
-### 5.6 Extract 产出规范
+### 5.8 Extract 产出规范
 
 **目录结构**：
 
@@ -940,12 +907,10 @@ doc-plan.json
 raw/
   ├── 01-项目总览.md
   ├── 02-仓库结构.md
-  ├── 02a-Workspace架构.md
-  ├── 03a-Agent架构.md
-  ├── 04a-Tool体系.md
-  ├── 05a-插件系统.md
-  ├── 06a-上下文系统.md
-  ├── 07a-工作流系统.md
+  ├── 03-Agent调度循环深度解析.md
+  ├── 04-Skill编排检查点机制.md
+  ├── 05-插件机制深度解析.md
+  ├── 06-Tool权限审批流程.md
   ├── 11-风险与技术债.md
   └── 12-术语表.md
 ```
@@ -958,6 +923,7 @@ raw/
 4. **必须提供典型场景**：至少 2 个具体使用场景，说明系统行为
 5. **必须标注源文件**：关键分析结论必须引用源文件路径（如 `参见 src/agent/loop.ts:42`）
 6. **必须回答深度锚点**：每个模板的"深度锚点"问题必须全部回答，不能跳过
+7. **深度文档必须追踪关键路径**：从入口到出口的完整路径，带文件路径和行号
 
 ---
 
@@ -1015,7 +981,7 @@ raw/
 **处理**：
 
 1. 识别跨文档引用点（同一模块/类/概念在不同文档中被提及）
-2. 在提及处插入 `→ 参见 [[02-仓库结构#模块划分]]` 格式的链接
+2. 在提及处插入 `→ 参见 [[03-Agent调度循环深度解析#核心机制]]` 格式的链接
 3. 生成引用关系矩阵
 
 **引用规则**：
@@ -1023,10 +989,8 @@ raw/
 | 源文档 | 目标文档 | 引用场景 |
 |--------|----------|----------|
 | overview | structure | 提到模块时 |
-| architecture | domain | 提到领域对象时 |
-| architecture | flows | 提到调用链时 |
-| flows | api | 提到接口调用时 |
-| flows | data | 提到数据操作时 |
+| deep_analysis | deep_analysis | 提到其他热点涉及的模块/机制时 |
+| deep_analysis | risk | 提到风险模块时反向链接 |
 | risk | *所有* | 提到风险模块时反向链接 |
 
 ### 6.5 一致性校验
@@ -1056,10 +1020,10 @@ raw/
 1. 按 doc-plan.json 的编号顺序编排
 2. 在每份 wiki 文档顶部添加导航：
    ```markdown
-   ← 上一篇：01-项目总览 | **02-仓库结构** | 下一篇：03-架构设计 →
+   ← 上一篇：01-项目总览 | **02-仓库结构** | 下一篇：03-订单生命周期深度解析 →
    ```
 3. 生成 wiki 目录索引 `wiki/00-目录.md`
-4. Agent/Platform 专用文档按逻辑位置插入（02a 在 02 后，03a 替代 03）
+4. 深度文档按热点逻辑位置编排（在 structure 后、risk 前）
 
 **输出目录**：
 
@@ -1068,12 +1032,10 @@ wiki/
   ├── 00-目录.md
   ├── 01-项目总览.md
   ├── 02-仓库结构.md
-  ├── 02a-Workspace架构.md
-  ├── 03a-Agent架构.md
-  ├── 04a-Tool体系.md
-  ├── 05a-插件系统.md
-  ├── 06a-上下文系统.md
-  ├── 07a-工作流系统.md
+  ├── 03-Agent调度循环深度解析.md
+  ├── 04-Skill编排检查点机制.md
+  ├── 05-插件机制深度解析.md
+  ├── 06-Tool权限审批流程.md
   ├── 11-风险与技术债.md
   └── 12-术语表.md
 ```
@@ -1096,7 +1058,7 @@ wiki/
   "nodes": [
     {
       "id": "string",
-      "type": "module | class | function | interface | table | flow | concept",
+      "type": "module | class | function | interface | table | flow | concept | hotspot",
       "label": "string",
       "layer": "string",
       "source_doc": "string",
@@ -1166,13 +1128,13 @@ raw/ + wiki/ + graph.json
 
 | 现有技能 | 动作 | 对应新设计 |
 |----------|------|-----------|
-| scan | **重写** | Stage 1: SCAN — 输出 repo-profile.json |
+| scan | **重写** | Stage 1: SCAN — 输出 repo-profile.json（含复杂度热点） |
 | extract | **重写** | Stage 3: EXTRACT 的路由器，读取 doc-plan 派发子代理 |
-| extract-topology | **删除** | 合并到 architecture/workspace 的深度模板中 |
-| extract-api | **重写** | → api 文档类型的深度模板 |
-| extract-data-model | **重写** | → data 文档类型的深度模板 |
-| extract-flows | **重写** | → flows 文档类型的深度模板 |
-| extract-concepts | **删除** | 合并到 glossary + domain 的深度模板中 |
+| extract-topology | **删除** | 功能由深度文档的 call_chain 热点类型覆盖 |
+| extract-api | **删除** | 功能由深度文档的 call_chain/security_boundary 热点类型覆盖 |
+| extract-data-model | **删除** | 功能由深度文档的 consistency/data_pipeline 热点类型覆盖 |
+| extract-flows | **删除** | 功能由深度文档的 state_machine/workflow 热点类型覆盖 |
+| extract-concepts | **删除** | 功能由 glossary 基础文档覆盖 |
 | cross-ref | **重写** | → Stage 4: TRANSFORM 的交叉引用子步骤 |
 | ingest | **重写** | → Stage 4: TRANSFORM 的术语归一 + 一致性校验 |
 | transform | **重写** | → Stage 4: TRANSFORM 的编排入口 |
@@ -1184,28 +1146,20 @@ raw/ + wiki/ + graph.json
 
 | 新技能 | 说明 |
 |--------|------|
-| plan | Stage 2: PLAN — 画像驱动的文档规划 |
-| extract-overview | overview 文档类型的深度模板 |
-| extract-structure | structure 文档类型的深度模板 |
-| extract-architecture | architecture 文档类型的深度模板 |
-| extract-domain | domain 文档类型的深度模板 |
-| extract-agent-system | agent_system 文档类型的深度模板 |
-| extract-tool-system | tool_system 文档类型的深度模板 |
-| extract-plugin-system | plugin_system 文档类型的深度模板 |
-| extract-context-system | context_system 文档类型的深度模板 |
-| extract-workflow-system | workflow_system 文档类型的深度模板 |
-| extract-workspace | workspace 文档类型的深度模板 |
-| extract-config | config 文档类型的深度模板 |
-| extract-deployment | deployment 文档类型的深度模板 |
-| extract-testing | testing 文档类型的深度模板 |
-| extract-risk | risk 文档类型的深度模板 |
-| extract-glossary | glossary 文档类型的深度模板 |
+| plan | Stage 2: PLAN — 基础文档 + 深度文档规划 |
+| extract-overview | overview 基础文档模板 |
+| extract-structure | structure 基础文档模板 |
+| extract-risk | risk 基础文档模板 |
+| extract-glossary | glossary 基础文档模板 |
+| extract-deep | 深度文档通用模板（统一深度骨架 + 热点类型指引） |
+
+**关键变化**：不再为每种文档类型创建独立技能。深度文档只用一个 `extract-deep` 技能，通过 hotspot_type 参数选择对应的指引。基础文档各有专属技能（因为模板差异大）。
 
 ### 8.2 代理重写
 
 | 现有代理 | 动作 | 新设计 |
 |----------|------|--------|
-| extract-agent | **重写** | 通用提取代理，接收文档类型 + 深度模板 + 范围提示，输出 raw 文档 |
+| extract-agent | **重写** | 通用提取代理，接收文档类型（baseline/deep_analysis）+ 模板 + 热点类型 + 范围提示 + 依赖文档核心结论，输出 raw 文档 |
 | transform-agent | **重写** | 通用转换代理，接收 transform 子步骤类型，执行术语归一/交叉引用/一致性校验 |
 
 ### 8.3 命令重写
@@ -1218,18 +1172,18 @@ raw/ + wiki/ + graph.json
 
 ```
 Step 1: SCAN
-  扫描仓库 → 输出 repo-profile.json
-  检查点：用户确认画像是否准确
+  扫描仓库 → 输出 repo-profile.json（含复杂度热点）
+  检查点：用户确认画像和热点是否准确
 
 Step 2: PLAN
-  基于画像 → 输出 doc-plan.json
+  基于画像 + 热点 → 输出 doc-plan.json（基础文档 + 深度文档）
   检查点：用户确认文档集和提取顺序
 
 Step 3: EXTRACT（第一波：无依赖文档）
   并行派发 extract-agent → 输出 raw 文档
   检查点：展示产出，用户确认质量
 
-Step 4: EXTRACT（第二波+：有依赖文档）
+Step 4: EXTRACT（后续波：有依赖文档）
   按依赖顺序派发 extract-agent → 输出 raw 文档
   检查点：展示产出，用户确认质量
 
@@ -1246,63 +1200,70 @@ Step 6: LOAD
 
 ## 9. 架构决策记录
 
-### ADR-1: 画像驱动 vs 固定维度
+### ADR-1: 基础文档 + 深度文档双层
 
-- **决策**：采用画像驱动（repo-profile → doc-plan → 动态文档集）
-- **替代方案**：保留固定 5 维度（topology/api/data-model/flows/concepts）
-- **理由**：固定维度无法适应不同仓库类型，导致大量空壳文档和维度重叠。画像驱动能根据仓库实际特征产出有价值的文档
-- **后果**：scan 阶段变重，但整体产出质量显著提升
+- **决策**：文档分为基础层（固定 4 种）和深度层（复杂度热点驱动）
+- **替代方案 A**：全部用固定模板（原设计 12-18 种通用模板）
+- **替代方案 B**：全部用发现式提取（无固定文档）
+- **理由**：纯固定模板无法体现仓库特异性的复杂度（订单系统的核心难点是状态机，插件系统的核心难点是抽象体系，这不是同一个模板能覆盖的）；纯发现式又缺乏兜底，简单仓库可能什么深度文档都发现不了。双层混合保证覆盖面的同时允许深度文档从代码中"长出来"
+- **后果**：SCAN 阶段需要增加复杂度热点识别能力；PLAN 阶段逻辑更复杂
 
-### ADR-2: 保留 raw/wiki 双层
+### ADR-2: 深度文档用统一骨架 + 热点类型指引
+
+- **决策**：所有深度文档共用统一深度分析骨架，通过 hotspot_type 参数插入定制章节
+- **替代方案**：每种热点类型有独立模板
+- **理由**：深度文档的核心写作框架是相同的（问题定义→当前实现→设计决策→异常边界→改进方向），差异只在分析侧重点（状态机关注转换规则、调用链关注时序和重试、抽象体系关注生命周期和注册机制）。统一骨架 + 指引既保证结构一致性，又允许分析重点不同
+- **后果**：只需维护一个 extract-deep 技能 + 8 种热点类型指引
+
+### ADR-3: 保留 raw/wiki 双层
 
 - **决策**：保留 raw（原始提取）和 wiki（整合文档）双层
 - **替代方案**：只产出 wiki 单层
-- **理由**：raw 保留提取的原始粒度，支持站点 Raw View；wiki 提供 整合后的连贯阅读体验。两层各司其职
+- **理由**：raw 保留提取的原始粒度，支持站点 Raw View；wiki 提供 transform 后的连贯阅读体验。两层各司其职
 - **后果**：存储翻倍，但站点展示更丰富
 
-### ADR-3: Transform + Load 分离
+### ADR-4: Transform + Load 分离
 
 - **决策**：Transform（raw → wiki + graph）和 Load（数据转站点格式）分开
 - **替代方案**：合并为一个阶段
 - **理由**：Transform 是内容加工（语义操作），Load 是数据格式转换（技术操作），职责不同。分离后可独立重跑
 - **后果**：多一个阶段，但可增量更新
 
-### ADR-4: 文档类型模板 vs 自由提取
+### ADR-5: 删除原有 5 维度 extract 技能
 
-- **决策**：每种文档类型有严格的深度模板（分析框架 + 深度锚点 + 输出结构）
-- **替代方案**：只给 agent 文档标题和简要说明，让它自由发挥
-- **理由**：自由提取导致质量不稳定、深度参差不齐。模板强制 agent 回答关键问题、遵循分析框架
-- **后果**：灵活性降低，但质量可控
-
-### ADR-5: Agent/Platform 专用文档 vs 通用文档扩展
-
-- **决策**：为 agent/tool/plugin/context/workflow 系统设立专用文档类型
-- **替代方案**：在 architecture 文档中加章节覆盖
-- **理由**：Agent 系统的核心关注点与传统 CRUD 架构完全不同（调度循环、上下文管理、工具路由 vs 分层调用、数据流转），放在同一文档中会两头不深
-- **后果**：文档类型增多，但每份文档深度更专
+- **决策**：删除 extract-topology/api/data-model/flows/concepts，由深度文档覆盖
+- **替代方案**：保留原有维度作为"基础文档"的一部分
+- **理由**：原 5 维度的职责已被深度文档完全覆盖且更深入——topology 由 call_chain 热点覆盖、api 由 call_chain/security_boundary 覆盖、data-model 由 consistency/data_pipeline 覆盖、flows 由 state_machine/workflow 覆盖、concepts 由 glossary 覆盖。保留会导致职责重叠
+- **后果**：技能总数减少（5 个 extract-* → 1 个 extract-deep + 4 个 baseline extract）
 
 ---
 
 ## 10. V1 实施范围
 
-### 10.1 V1 必须实现的模板
+### 10.1 V1 必须实现
 
-| 优先级 | 文档类型 | 说明 |
+| 优先级 | 组件 | 说明 |
+|--------|------|------|
+| P0 | scan（含复杂度热点发现） | 核心能力，驱动后续所有阶段 |
+| P0 | plan | 基础文档 + 深度文档规划 |
+| P0 | extract-deep（含全部 8 种热点类型指引） | 深度文档核心 |
+| P0 | extract-overview, extract-structure | 基础文档 |
+| P0 | transform（术语归一 + 交叉引用 + 一致性校验 + 文档编排） | raw → wiki 升华 |
+| P1 | extract-risk, extract-glossary | 基础文档 |
+| P1 | build-graph（使用新 schema） | 知识图谱 |
+| P1 | /kb 命令重写 | 六步检查点编排 |
+| P2 | load（搜索索引 + 图谱数据转换） | 站点集成 |
+| P2 | 站点适配 | 三视图适配新数据结构 |
+
+### 10.2 V1 热点类型指引优先级
+
+| 优先级 | 热点类型 | 理由 |
 |--------|----------|------|
-| P0 | overview, structure, risk, glossary | 通用必出 |
-| P0 | architecture | 通用条件出（大多数仓库满足 modules > 3） |
-| P0 | agent_system | Agent/Platform 项目核心 |
-| P1 | tool_system, plugin_system | Agent/Platform 项目关键 |
-| P1 | api, data, flows | 传统后端项目关键 |
-| P2 | workspace, context_system, workflow_system | 大型项目增强 |
-| P2 | config, deployment, testing | 运维/质量增强 |
+| P0 | state_machine, call_chain, core_abstraction | 最常见、价值最高 |
+| P1 | consistency, workflow | 中等常见 |
+| P2 | concurrency, data_pipeline, security_boundary | 特定场景 |
 
-### 10.2 V1 范围
-
-- 实现 P0 + P1 共 11 种模板（overview, structure, risk, glossary, architecture, agent_system, tool_system, plugin_system, api, data, flows）
-- P2 模板用简化占位模板（只含统一骨架），待 V2 深化
-- scan 阶段识别全部 6 种 repo_type
-- plan 阶段支持全部条件生成规则
+P2 热点类型在 V1 中用简化指引（只含核心章节，不含完整子章节），V2 深化。
 
 ---
 
@@ -1310,9 +1271,10 @@ Step 6: LOAD
 
 | 风险 | 影响 | 缓解 |
 |------|------|------|
-| Scan 画像准确度不足 | 后续所有阶段产出偏移 | 添加用户确认检查点，支持手动修正画像 |
-| P2 模板简化导致产出浅 | workspace/context/workflow 文档深度不足 | V1 先跳过这些文档，不生成空壳 |
+| 复杂度热点识别准确度不足 | 深度文档可能关注错误方向 | 用户确认检查点，支持手动增删热点 |
+| P2 热点指引简化导致产出浅 | 并发/管道/安全文档深度不足 | V1 先跳过这些热点，不生成空壳文档 |
 | 子代理上下文窗口不足 | 深度分析受限 | 只传被依赖文档的核心结论 JSON，不传全文 |
 | Transform 交叉引用质量 | 人工定义规则可能遗漏 | 优先保证通用引用规则，特殊引用由 agent 自行发现 |
 | graph.json schema 变更 | 站点展示需适配 | 保持节点/边基础结构不变，属性可扩展 |
-| raw/wiki 编号相同可能混淆 | 两个目录下有同名文件 | raw 和 wiki 目录隔离，站点视图区分清晰 |
+| 深度文档标题由热点 suggested_title 生成 | 标题可能不够精确 | 用户可在 PLAN 检查点修改标题 |
+| 基础文档只有 4 种 | 对仓库的"广度覆盖"可能不足 | 深度文档已经承担了架构/模块/流程等内容的覆盖 |
