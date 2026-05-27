@@ -12,6 +12,10 @@
 
 ## [Unreleased]
 
+### Removed
+
+- **executing-plans: 移除技能** — subagent-driven-development 成为唯一开发执行流程；writing-plans 不再提供执行方式选择，计划完成后直接使用 SDD；SDD 决策图简化，移除 executing-plans 对比和引用
+
 ### Added
 - **prd-generation: 集成 jamesrochabrun/skills prd-generator 参考资源** — 新增 `references/prd_template.md`（Standard/Lean/One-Pager 三种规模 PRD 模板，融合项目初始化级结构与行业最佳实践）、`references/user_story_examples.md`（用户故事编写指南：INVEST 原则、10 个领域示例、验收标准模式、常见错误、拆分技巧）、`references/metrics_frameworks.md`（指标框架指南：AARRR、HEART、North Star、OKRs、PMF 指标、框架选择矩阵）、`scripts/generate_prd.sh`（交互式 PRD 生成脚本）、`scripts/validate_prd.sh`（PRD 完整性与质量校验脚本，支持中文 PRD 结构和 What≠How 检查）；SKILL.md 新增 PRD 类型选择、用户故事/指标框架参考步骤、Self-Review Checklist、Resources 章节
 
