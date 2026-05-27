@@ -1,6 +1,19 @@
 # Changelog
 
+## [0.6.0] - 2026-05-27
+
+### Changed
+- **prd-generation: 重构为五阶段流程** — 以参考实现 prd-generator SKILL.md 为骨架重写；头脑风暴与竞品调研从二选一改为串行必选（Phase 1 需求澄清 → Phase 2 竞品调研）；新增 Phase 3 PRD Draft（合并 Phase 1+2 产出 + PRD 格式选择）、Phase 4 Review & Iteration（审查反馈分级处理 + 自执行 validation checklist）、Phase 5 Finalization（用户审批硬门控 + 定稿归档）；新增 PRD Formats（Standard/Lean/One-Pager）、Usage Patterns（3 种使用场景）、PRD Best Practices、Self-Review Checklist、Resources 章节；Phase 1 直接调用 brainstorming skill（不再内联定义子步骤）
+
+### Added
+- `references/prd_template.md` — 从 reference/prd-generator 复制，Standard PRD 完整模板
+- `references/metrics_frameworks.md` — 从 reference/prd-generator 复制，AARRR/HEART/North Star/OKRs 指标框架指南
+- `references/user_story_examples.md` — 从 reference/prd-generator 复制，用户故事范例与最佳实践
+
 ## [Unreleased]
+
+### Added
+- **prd-generation: 集成 jamesrochabrun/skills prd-generator 参考资源** — 新增 `references/prd_template.md`（Standard/Lean/One-Pager 三种规模 PRD 模板，融合项目初始化级结构与行业最佳实践）、`references/user_story_examples.md`（用户故事编写指南：INVEST 原则、10 个领域示例、验收标准模式、常见错误、拆分技巧）、`references/metrics_frameworks.md`（指标框架指南：AARRR、HEART、North Star、OKRs、PMF 指标、框架选择矩阵）、`scripts/generate_prd.sh`（交互式 PRD 生成脚本）、`scripts/validate_prd.sh`（PRD 完整性与质量校验脚本，支持中文 PRD 结构和 What≠How 检查）；SKILL.md 新增 PRD 类型选择、用户故事/指标框架参考步骤、Self-Review Checklist、Resources 章节
 
 ### Changed
 - **system-architect: 重设计为 11 章结构** — 采用中文企业级架构文档结构（文档概述/业务背景/技术选型/总体架构/模块设计/数据存储/接口通信/代码库工程结构/非功能设计/部署运维/风险演进），替代原四维度结构（应用/信息/集成/技术架构）；全深度可实现（每个组件要求算法+状态机+Schema+错误链）；新增 architecture-reviewer/researcher subagent prompt；4 个 reference 合并为 architecture-guide.md；新增 anti-patterns.md；更新 depth-requirements.md（全深度模型）、architecture-review-checklist.md（11 章审查）、adr-template.md（中文+章节引用）

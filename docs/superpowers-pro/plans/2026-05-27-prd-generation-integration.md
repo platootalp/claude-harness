@@ -1,3 +1,76 @@
+# prd-generation Integration Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers-pro:subagent-driven-development (recommended) or superpowers-pro:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Integrate reference prd-generator into our prd-generation skill — adopt reference SKILL.md as the main skeleton, add competitive research as Phase 2, make brainstorming + competitive research serial mandatory (not either/or), and copy reference documents.
+
+**Architecture:** 5-phase flow: Requirements Gathering (brainstorming) → Competitive Research → PRD Draft → Review & Iteration → Finalization. The SKILL.md is rewritten based on the reference implementation's structure, keeping our competitive-researcher and prd-reviewer subagents and our PRD standard structure. Three reference documents are copied verbatim.
+
+**Tech Stack:** Markdown skill files, no code dependencies.
+
+---
+
+## File Structure
+
+| File | Action | Responsibility |
+|------|--------|---------------|
+| `skills/prd-generation/SKILL.md` | Rewrite | Main skill definition — 5-phase flow, based on reference skeleton |
+| `skills/prd-generation/prd-reviewer-prompt.md` | Keep unchanged | PRD reviewer subagent prompt |
+| `skills/prd-generation/competitive-researcher-prompt.md` | Keep unchanged | Competitive researcher subagent prompt |
+| `skills/prd-generation/references/prd_template.md` | Create (copy) | Standard PRD template |
+| `skills/prd-generation/references/metrics_frameworks.md` | Create (copy) | AARRR/HEART/OKR metrics frameworks |
+| `skills/prd-generation/references/user_story_examples.md` | Create (copy) | User story patterns and examples |
+| `.claude-plugin/plugin.json` | Modify | bump version (minor) |
+| `CHANGELOG.md` | Modify | add entry under [Unreleased] |
+
+---
+
+### Task 1: Copy reference documents
+
+**Files:**
+- Create: `skills/prd-generation/references/prd_template.md`
+- Create: `skills/prd-generation/references/metrics_frameworks.md`
+- Create: `skills/prd-generation/references/user_story_examples.md`
+
+- [ ] **Step 1: Create references directory and copy files**
+
+```bash
+mkdir -p /Users/lijunyi/road/claude-harness/plugins/superpowers-pro/skills/prd-generation/references
+cp /Users/lijunyi/road/claude-harness/reference/prd-generator/reference/prd_template.md /Users/lijunyi/road/claude-harness/plugins/superpowers-pro/skills/prd-generation/references/prd_template.md
+cp /Users/lijunyi/road/claude-harness/reference/prd-generator/reference/metrics_frameworks.md /Users/lijunyi/road/claude-harness/plugins/superpowers-pro/skills/prd-generation/references/metrics_frameworks.md
+cp /Users/lijunyi/road/claude-harness/reference/prd-generator/reference/user_story_examples.md /Users/lijunyi/road/claude-harness/plugins/superpowers-pro/skills/prd-generation/references/user_story_examples.md
+```
+
+- [ ] **Step 2: Verify files copied correctly**
+
+```bash
+ls -la /Users/lijunyi/road/claude-harness/plugins/superpowers-pro/skills/prd-generation/references/
+```
+
+Expected: 3 files listed, matching the reference originals in line count.
+
+- [ ] **Step 3: Commit**
+
+```bash
+cd /Users/lijunyi/road/claude-harness
+git add plugins/superpowers-pro/skills/prd-generation/references/
+git commit -m "feat(superpowers-pro): add PRD reference documents (template, metrics, user stories)"
+```
+
+---
+
+### Task 2: Rewrite SKILL.md
+
+**Files:**
+- Rewrite: `skills/prd-generation/SKILL.md`
+
+This is the core task. The new SKILL.md adopts the reference implementation's structure (overview, core workflow with phases, usage patterns, best practices) but integrates our competitive research phase and our PRD standard structure.
+
+- [ ] **Step 1: Write the new SKILL.md**
+
+The new SKILL.md content (full text):
+
+```markdown
 ---
 name: prd-generation
 description: Generate comprehensive, well-structured Product Requirements Documents (PRDs) through a 5-phase workflow. Use this skill when users ask to "create a PRD", "write product requirements", "document a feature", "需求文档", "产品需求", or need help structuring product specifications.
@@ -184,7 +257,7 @@ Given <前提> When <操作> Then <结果>
 
 ### 1.1 用户痛点
 从用户视角描述痛点，不是从竞品视角。格式：
-- **谁** 在 **什么场景下** 遇到 **什么问题**，导致 **什么后果**
+- **谁** 在 **什么场景下** 遆到 **什么问题**，导致 **什么后果**
 
 ### 1.2 痛点证据
 支撑痛点真实存在的数据/研究/用户反馈来源：
@@ -501,3 +574,70 @@ This skill includes bundled resources:
 2. **Iterate based on input**: PRDs are living documents
 3. **Get formal sign-off**: Ensure commitment
 4. **Keep it updated**: Adjust as understanding evolves
+```
+
+- [ ] **Step 2: Verify SKILL.md was written correctly**
+
+```bash
+wc -l /Users/lijunyi/road/claude-harness/plugins/superpowers-pro/skills/prd-generation/SKILL.md
+head -5 /Users/lijunyi/road/claude-harness/plugins/superpowers-pro/skills/prd-generation/SKILL.md
+```
+
+Expected: ~300+ lines, frontmatter with `name: prd-generation`, first heading "PRD Generation — 五阶段产品需求文档生成".
+
+- [ ] **Step 3: Commit**
+
+```bash
+cd /Users/lijunyi/road/claude-harness
+git add plugins/superpowers-pro/skills/prd-generation/SKILL.md
+git commit -m "feat(superpowers-pro): rewrite prd-generation SKILL.md with 5-phase workflow and competitive research integration"
+```
+
+---
+
+### Task 3: Update version and changelog
+
+**Files:**
+- Modify: `.claude-plugin/plugin.json`
+- Modify: `CHANGELOG.md`
+
+- [ ] **Step 1: Read current plugin.json version**
+
+```bash
+cat /Users/lijunyi/road/claude-harness/plugins/superpowers-pro/.claude-plugin/plugin.json
+```
+
+- [ ] **Step 2: Bump version (minor) and update CHANGELOG**
+
+Read `plugin.json`, bump version from current to next minor (e.g. 0.2.1 → 0.3.0). Add changelog entry under `[Unreleased]`.
+
+- [ ] **Step 3: Commit version bump**
+
+```bash
+cd /Users/lijunyi/road/claude-harness
+git add plugins/superpowers-pro/.claude-plugin/plugin.json plugins/superpowers-pro/CHANGELOG.md
+git commit -m "feat(superpowers-pro): bump version to 0.3.0 for prd-generation integration"
+```
+
+---
+
+## Self-Review
+
+**1. Spec coverage check:**
+
+| Spec Requirement | Covered by Task |
+|-----------------|----------------|
+| 5-phase flow (brainstorming → competitive → PRD → review → finalize) | Task 2 (SKILL.md rewrite) |
+| Brainstorming + competitive research serial mandatory | Task 2 (SKILL.md Phase 1+2) |
+| Copy 3 reference documents | Task 1 |
+| Keep prd-reviewer-prompt.md unchanged | Not touched (implicit) |
+| Keep competitive-researcher-prompt.md unchanged | Not touched (implicit) |
+| PRD format selection (Standard/Lean/One-Pager) | Task 2 (SKILL.md Formats section) |
+| Validation checklist (from validate_prd.sh logic) | Task 2 (SKILL.md Phase 4 + Self-Review Checklist) |
+| Version bump + changelog | Task 3 |
+
+All spec requirements covered. No gaps.
+
+**2. Placeholder scan:** No TBD, TODO, "implement later", "fill in details" found. All code/content is complete.
+
+**3. Type consistency:** No code types involved — all markdown files. File paths are consistent across all tasks.
