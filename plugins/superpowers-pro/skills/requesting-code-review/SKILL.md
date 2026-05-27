@@ -79,10 +79,6 @@ You: [Fix progress indicators]
 - Catch issues before they compound
 - Fix before moving to next task
 
-**Executing Plans:**
-- Review after each task or at natural checkpoints
-- Get feedback, apply, continue
-
 **Ad-Hoc Development:**
 - Review before merge
 - Review when stuck
