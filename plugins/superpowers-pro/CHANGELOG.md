@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Changed
+- **prd-generation: 全面升级 PRD 模板至项目初始化级别** — 新增 Problem Statement（痛点+证据+代价）、Vision & Positioning、User Stories（Gherkin 验收标准）、Out of Scope、Counter-metrics、Assumptions/Dependencies/Risks、Milestones 章节；强化 What≠How 原则（PRD 不写架构决策）；竞品分析聚焦用户痛点而非功能缺口
+- **competitive-researcher: 增加痛点提炼** — 输出结构新增"用户痛点"章节（行业共性痛点 vs 竞品特有痛点），每个痛点必须关联证据来源
+- **prd-reviewer: 增加结构化审查矩阵** — 新增 Vision & Positioning、What vs How、Counter-metrics、Assumptions & Risks 审查维度；验收标准检查 Gherkin 格式；Out of Scope 检查是否被埋在技术约束中
+
+### Changed
 - 统一插件内所有 `superpowers` 引用为 `superpowers-pro`（skill 调用前缀、文件系统路径、文档路径、品牌文案）
 - 保留 `using-superpowers` skill 功能名、`obra/superpowers` 上游 URL、`You have superpowers` 品牌文案不变
 

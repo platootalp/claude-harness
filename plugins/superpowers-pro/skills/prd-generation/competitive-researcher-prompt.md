@@ -2,112 +2,78 @@
 
 Use this template when dispatching a competitive research subagent.
 
-**Purpose:** 自动搜索和分析竞品产品功能，产出竞品分析文档（知识沉淀）
+**Purpose:** Research competitor products to extract user pain points, feature gaps, and differentiation opportunities. The output feeds into PRD generation — focus on what users complain about, not just what features exist.
 
-**Dispatch after:** 用户选择了竞品对标模式，且已提供竞品名称/领域
+**Dispatch when:** User selects 竞品对标 mode in PRD generation.
 
 ```
 Agent tool (general-purpose):
-  description: "Research competitors for <project>"
+  description: "Research competitors for PRD"
   prompt: |
-    You are a competitive research analyst. Your job is to thoroughly research
-    the specified competitors and produce a structured analysis document.
+    You are a competitive researcher. Research the following competitors and
+    produce a structured analysis focused on **user pain points and
+    differentiation opportunities**.
 
-    ## Competitors
+    **Competitors:** [COMPETITOR_LIST]
+    **Domain:** [DOMAIN]
+    **Research scope:** [SCOPE]
+    **Project name:** [PROJECT_NAME]
+    **Date:** [DATE]
 
-    [LIST OF COMPETITOR NAMES/DOMAINS/URLS — paste here]
+    ## Research Steps
 
-    ## Industry/Domain
+    1. For each competitor, use WebSearch to find:
+       - Official product pages and documentation
+       - User reviews, complaints, and feature requests (Reddit, HN, GH Issues, forums)
+       - Pricing and feature tiers
+       - Recent updates and roadmap signals
 
-    [INDUSTRY OR MARKET SEGMENT — paste here]
+    2. Use WebFetch to read key pages and extract details.
 
-    ## Research Scope
+    3. Cross-reference user complaints across competitors to identify
+       **shared pain points** (industry-wide problems) vs.
+       **competitor-specific gaps** (differentiation opportunities).
 
-    [WHICH ASPECTS TO FOCUS ON — features, pricing, UX, tech stack, etc.]
+    ## Output Structure
 
-    ## Project Name
+    Save results to: docs/superpowers-pro/projects/[PROJECT]/YYYY-MM-DD-[PROJECT]-competitive-analysis.md
 
-    [PROJECT NAME — used in output file path]
+    ```markdown
+    # [PROJECT_NAME] 竞品分析
 
-    ## Date
+    > 日期: [DATE] | 研究范围: [SCOPE]
 
-    [CURRENT DATE YYYY-MM-DD — used in output file path]
+    ## 1. 竞品概览
+    | 竞品 | 定位 | 核心功能 | 价格 | 目标用户 |
 
-    ## Your Job
+    ## 2. 用户痛点（从竞品用户抱怨中提炼）
+    **重要：本节是竞品分析的核心价值。不是罗列"竞品缺什么功能"，而是从用户抱怨中提炼真实痛点。**
 
-    1. **Search each competitor** using WebSearch:
-       - Product feature pages, documentation, release notes
-       - Third-party reviews, comparisons, analyses
-       - Pricing pages, case studies
+    ### 行业共性痛点（多竞品用户都在抱怨的问题）
+    | 痛点 | 证据来源 | 严重度 | 涉及竞品 |
 
-    2. **Extract and organize** for each competitor:
-       - Core feature list (with capability level: full / partial / none)
-       - Target user segment
-       - Differentiators and positioning
-       - Notable weaknesses or gaps
+    ### 竞品特有痛点（某竞品用户独有抱怨）
+    | 痛点 | 竞品 | 证据来源 | 差异化机会 |
 
-    3. **Build competitive matrix**:
-       - Rows: Features / Capabilities
-       - Columns: Each competitor + "Our Project" (left blank for user to fill)
-       - Cells: Capability level or specific details
+    ## 3. 功能矩阵
+    | 功能 | [本项目] | 竞品 A | 竞品 B | 说明 |
+    |------|---------|--------|--------|------|
+    （本项目的列暂填"待定"，在 PRD 中确定）
 
-    4. **Write the analysis document** to:
-       `docs/superpowers-pro/projects/<project>/YYYY-MM-DD-<project>-competitive-analysis.md`
+    ## 4. 差异化机会
+    | 方向 | 描述 | 对标功能 | 用户痛点支撑 | 竞争壁垒评估 |
 
-       Document structure:
-       ```markdown
-       # <项目名称> 竞品分析报告
+    ## 5. 关键发现
+    - 最重要的 3-5 个发现，按对 PRD 决策的影响排序
+    - 每个发现要关联到具体的用户痛点证据
+    ```
 
-       ## 概述
-       研究范围、竞品数量、核心发现摘要
+    ## Key Principles
 
-       ## 竞品概览
-
-       ### <竞品 A>
-       - 定位与目标用户
-       - 核心功能列表
-       - 差异化优势
-       - 主要不足
-
-       ### <竞品 B>
-       ...
-
-       ## 竞品功能矩阵
-
-       | 功能/能力 | 本项目 | 竞品 A | 竞品 B | 说明 |
-       |-----------|--------|--------|--------|------|
-       | 功能 1    |        | ✅     | ⚠️    | ...  |
-       | 功能 2    |        | ❌     | ✅     | ...  |
-
-       图例: ✅ 完整支持 | ⚠️ 部分支持 | ❌ 不支持 | 留空待填
-
-       ## 市场缺口分析
-       竞品均未覆盖的功能/能力 → 潜在差异化机会
-
-       ## 关键洞察与建议
-       3-5 条可操作的产品建议
-       ```
-
-    5. **Return summary** to the caller:
-       - Number of competitors researched
-       - Key findings (3-5 bullet points)
-       - Path to the full analysis document
-
-    ## Self-Review
-
-    Before returning, verify:
-    - [ ] Every competitor has at least 3 sources consulted
-    - [ ] Feature matrix covers all major capability areas
-    - [ ] No TBD/TODO/待定 placeholders in the document
-    - [ ] Document is saved to the correct path
-
-    ## Output Format
-
-    Report one of:
-    - **DONE**: Research complete, document saved. Include: competitors count, key findings, document path.
-    - **DONE_WITH_CONCERNS**: Research partially complete. Include concerns list.
-    - **BLOCKED**: Cannot proceed. Include blocker description.
-    - **NEEDS_CONTEXT**: Missing critical information. Include what's needed.
+    - **Pain points over feature gaps** — "用户抱怨 X" 比 "竞品没有 X" 更有价值。功能缺失可能是用户不需要，但抱怨一定是痛点
+    - **Evidence over assertion** — 每个痛点必须有用户引述、Issue 链接或社区讨论作为证据
+    - **Shared vs specific** — 区分行业共性痛点（意味着必须对标）和竞品特有痛点（意味着差异化机会）
+    - **Link to user value** — 每个差异化机会必须关联到用户痛点，不能只有"我们可以做这个"
 ```
 
-**Researcher returns:** Status (DONE / DONE_WITH_CONCERNS / BLOCKED / NEEDS_CONTEXT), competitors count, key findings, document path
+**Researcher returns:** Summary of key findings (3-5 bullet points), link to saved analysis file.
