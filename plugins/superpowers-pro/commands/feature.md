@@ -24,8 +24,8 @@ effort: high
 
   Step 1/8  BRAINSTORM    □  探索需求，产出 spec 文档
   Step 2/8  SPEC_REVIEW   □  spec 审批（唯一人类检查点）
-  Step 3/8  PLAN          □  拆解 bite-sized 任务
-  Step 4/8  ISOLATE       □  Worktree 隔离 + 基线验证
+  Step 3/8  ISOLATE       □  Worktree 隔离 + 基线验证
+  Step 4/8  PLAN          □  拆解 bite-sized 任务
   Step 5/8  IMPLEMENT     □  TDD + 双重审查逐 task 执行
   Step 6/8  REVIEW        □  整体代码审查
   Step 7/8  VERIFY        □  验证门控
@@ -61,20 +61,7 @@ effort: high
 检查点: `━━━ [✓] Step 2/8: SPEC_REVIEW — 用户已批准设计文档`
 产出物: 用户审批确认（对话状态）
 
-## Step 3/8: PLAN
-
-调用 `superpowers-pro:writing-plans` skill。
-
-- 将设计拆解为 bite-sized 任务（每步 2-5 分钟，TDD 取向）
-- 无占位符（TBD/TODO/"implement later" 均禁止）
-- 固定使用 subagent-driven-development
-- 保存至 `docs/superpowers-pro/plans/YYYY-MM-DD-<feature-name>.md`
-- 计划文档头部标注: `REQUIRED SUB-SKILL: superpowers-pro:subagent-driven-development`
-
-检查点: `━━━ [✓] Step 3/8: PLAN — 实施计划已产出`
-产出物: `docs/superpowers-pro/plans/YYYY-MM-DD-<feature-name>.md`
-
-## Step 4/8: ISOLATE
+## Step 3/8: ISOLATE
 
 调用 `superpowers-pro:using-git-worktrees` skill。
 
@@ -84,8 +71,21 @@ effort: high
 - 安装项目依赖
 - 验证基线测试通过
 
-检查点: `━━━ [✓] Step 4/8: ISOLATE — Worktree 已创建，基线测试通过`
+检查点: `━━━ [✓] Step 3/8: ISOLATE — Worktree 已创建，基线测试通过`
 产出物: worktree 路径 + 分支名 + 基线测试通过
+
+## Step 4/8: PLAN
+
+调用 `superpowers-pro:writing-plans` skill。
+
+- 将设计拆解为 bite-sized 任务（每步 2-5 分钟，TDD 取向）
+- 无占位符（TBD/TODO/"implement later" 均禁止）
+- 固定使用 subagent-driven-development
+- 保存至 `docs/superpowers-pro/plans/YYYY-MM-DD-<feature-name>.md`
+- 计划文档头部标注: `REQUIRED SUB-SKILL: superpowers-pro:subagent-driven-development`
+
+检查点: `━━━ [✓] Step 4/8: PLAN — 实施计划已产出`
+产出物: `docs/superpowers-pro/plans/YYYY-MM-DD-<feature-name>.md`
 
 ## Step 5/8: IMPLEMENT
 

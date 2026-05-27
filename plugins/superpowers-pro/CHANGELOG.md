@@ -20,6 +20,7 @@
 - **prd-generation: 集成 jamesrochabrun/skills prd-generator 参考资源** — 新增 `references/prd_template.md`（Standard/Lean/One-Pager 三种规模 PRD 模板，融合项目初始化级结构与行业最佳实践）、`references/user_story_examples.md`（用户故事编写指南：INVEST 原则、10 个领域示例、验收标准模式、常见错误、拆分技巧）、`references/metrics_frameworks.md`（指标框架指南：AARRR、HEART、North Star、OKRs、PMF 指标、框架选择矩阵）、`scripts/generate_prd.sh`（交互式 PRD 生成脚本）、`scripts/validate_prd.sh`（PRD 完整性与质量校验脚本，支持中文 PRD 结构和 What≠How 检查）；SKILL.md 新增 PRD 类型选择、用户故事/指标框架参考步骤、Self-Review Checklist、Resources 章节
 
 ### Changed
+- **Breaking:** /feature、/fix、/refactor 命令中 ISOLATE 步骤前移至 PLAN 之前（Step 3 ↔ Step 4 互换）
 - **system-architect: 重设计为 11 章结构** — 采用中文企业级架构文档结构（文档概述/业务背景/技术选型/总体架构/模块设计/数据存储/接口通信/代码库工程结构/非功能设计/部署运维/风险演进），替代原四维度结构（应用/信息/集成/技术架构）；全深度可实现（每个组件要求算法+状态机+Schema+错误链）；新增 architecture-reviewer/researcher subagent prompt；4 个 reference 合并为 architecture-guide.md；新增 anti-patterns.md；更新 depth-requirements.md（全深度模型）、architecture-review-checklist.md（11 章审查）、adr-template.md（中文+章节引用）
 
 ### Changed
