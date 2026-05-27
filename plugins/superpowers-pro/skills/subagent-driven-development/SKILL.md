@@ -25,7 +25,7 @@ digraph when_to_use {
     "Have implementation plan?" -> "Tasks mostly independent?" [label="yes"];
     "Have implementation plan?" -> "Brainstorm or plan first" [label="no"];
     "Tasks mostly independent?" -> "subagent-driven-development" [label="yes"];
-    "Tasks mostly independent?" -> "Brainstorm or plan first" [label="no - tightly coupled"];
+    "Tasks mostly independent?" -> "Brainstorm or plan first" [label="no - re-plan into smaller tasks"];
 }
 ```
 
