@@ -67,7 +67,7 @@ effort: high
 
 - 将设计拆解为 bite-sized 任务（每步 2-5 分钟，TDD 取向）
 - 无占位符（TBD/TODO/"implement later" 均禁止）
-- 固定使用 subagent-driven-development，不提供 executing-plans 选项
+- 固定使用 subagent-driven-development
 - 保存至 `docs/superpowers-pro/plans/YYYY-MM-DD-<feature-name>.md`
 - 计划文档头部标注: `REQUIRED SUB-SKILL: superpowers-pro:subagent-driven-development`
 
@@ -96,7 +96,7 @@ effort: high
 2. spec reviewer 子代理审查 — 不通过则 implementer 修复后重新审查
 3. code quality reviewer 子代理审查 — 不通过则 implementer 修复后重新审查
 
-**无子代理可用时: 报错停止，不回退到 executing-plans。**
+**无子代理可用时: 报错停止。**
 
 连续执行所有 task，不在 task 之间暂停问人。
 
