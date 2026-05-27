@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Changed
+- **system-architect: 重设计为 11 章结构** — 采用中文企业级架构文档结构（文档概述/业务背景/技术选型/总体架构/模块设计/数据存储/接口通信/代码库工程结构/非功能设计/部署运维/风险演进），替代原四维度结构（应用/信息/集成/技术架构）；全深度可实现（每个组件要求算法+状态机+Schema+错误链）；新增 architecture-reviewer/researcher subagent prompt；4 个 reference 合并为 architecture-guide.md；新增 anti-patterns.md；更新 depth-requirements.md（全深度模型）、architecture-review-checklist.md（11 章审查）、adr-template.md（中文+章节引用）
+
+### Changed
 - **prd-generation: 全面升级 PRD 模板至项目初始化级别** — 新增 Problem Statement（痛点+证据+代价）、Vision & Positioning、User Stories（Gherkin 验收标准）、Out of Scope、Counter-metrics、Assumptions/Dependencies/Risks、Milestones 章节；强化 What≠How 原则（PRD 不写架构决策）；竞品分析聚焦用户痛点而非功能缺口
 - **competitive-researcher: 增加痛点提炼** — 输出结构新增"用户痛点"章节（行业共性痛点 vs 竞品特有痛点），每个痛点必须关联证据来源
 - **prd-reviewer: 增加结构化审查矩阵** — 新增 Vision & Positioning、What vs How、Counter-metrics、Assumptions & Risks 审查维度；验收标准检查 Gherkin 格式；Out of Scope 检查是否被埋在技术约束中

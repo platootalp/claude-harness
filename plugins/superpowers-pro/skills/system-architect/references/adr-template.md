@@ -1,91 +1,104 @@
 # Architecture Decision Record (ADR) Template
 
-## Format
+ADR 是架构决策记录的标准格式。在架构文档 §3.4 ADR 汇总中引用，完整 ADR 可内联或放在附录 B。
 
-Each ADR follows this structure:
+## 格式
+
+每个 ADR 遵循以下结构：
 
 ```markdown
-## ADR-[N]: [Title]
+# ADR-[N]: [标题]
 
-**Status:** Proposed / Accepted / Deprecated / Superseded by ADR-[M]
+**状态：** 已接受 / 提议中 / 已弃用 / 被 ADR-[M] 取代
 
-**Context:**
-[What is the issue that we're seeing that is motivating this decision or change? Include any forces at play: technical, organizational, schedule, constraints.]
+## 上下文
+[什么问题促使这个决策？包括技术、组织、进度、约束等力量。]
 
-**Decision:**
-[What is the change that we're proposing and/or doing?]
+## 决定
+[我们正在做什么改变？]
 
-**Alternatives Considered:**
-1. [Alternative A] — [brief description]
-2. [Alternative B] — [brief description]
-3. [Alternative C] — [brief description]
+## 备选方案
+1. [方案 A] — [简要描述]
+2. [方案 B] — [简要描述]
+3. [方案 C] — [简要描述]
 
-**Rationale:**
-[Why did we choose this option over the alternatives? What are the key tradeoffs?]
+## 理由
+[为什么选择这个方案而非其他？关键权衡是什么？]
 
-**Consequences:**
-- [Positive consequence]
-- [Negative consequence or risk]
-- [What becomes easier or harder to do because of this change]
+## 后果
+- [正面后果]
+- [负面后果或风险]
+- [这个改变让什么变得更容易或更难]
 ```
 
-## Example ADRs
+## 示例 ADR
 
-### ADR-1: Use PostgreSQL as Primary Database
+### ADR-1: 使用 PostgreSQL 作为主数据库
 
-**Status:** Accepted
+**状态：** 已接受
 
-**Context:**
-The system needs a primary data store for user accounts, orders, and product catalog. The PRD requires ACID transactions for order processing and complex queries for reporting. Team has 3 developers with PostgreSQL experience.
+**上下文：**
+系统需要一个主数据存储来存放用户账户、订单和产品目录。PRD 要求订单处理具有 ACID 事务支持，报表需要复杂查询能力。团队有 3 名具有 PostgreSQL 经验的开发者。
 
-**Decision:**
-Use PostgreSQL 15 as the primary relational database.
+**决定：**
+使用 PostgreSQL 15 作为主关系型数据库。
 
-**Alternatives Considered:**
-1. MySQL 8 — widely deployed, but weaker JSON support and fewer advanced index types
-2. MongoDB — flexible schema, but no ACID transactions across documents (needed for orders)
-3. DynamoDB — fully managed, but single-table design pattern is unfamiliar and limits query flexibility
+**备选方案：**
+1. MySQL 8 — 部署广泛，但 JSON 支持较弱，高级索引类型较少
+2. MongoDB — schema 灵活，但跨文档无 ACID 事务（订单需要）
+3. DynamoDB — 全托管，但单表设计模式不熟悉，且限制查询灵活性
 
-**Rationale:**
-PostgreSQL provides the strongest combination of ACID compliance, query flexibility, and team expertise. JSONB columns handle semi-structured data when needed. The operational burden is acceptable given team experience.
+**理由：**
+PostgreSQL 在 ACID 合规性、查询灵活性和团队专业知识方面提供了最强组合。JSONB 列可按需处理半结构化数据。考虑到团队经验，运维负担是可以接受的。
 
-**Consequences:**
-- Schema migrations require careful planning (use migration tool)
-- Read scaling requires read replicas (not built-in sharding)
-- Team can leverage existing knowledge — faster development
+**后果：**
+- Schema 迁移需要仔细规划（使用迁移工具）
+- 读扩展需要读副本（无内置分片）
+- 团队可以利用现有知识 — 加快开发速度
 
-### ADR-2: Monolith-First Architecture
+### ADR-2: 单体优先架构
 
-**Status:** Accepted
+**状态：** 已接受
 
-**Context:**
-The project is a new system with 2-3 developers. The PRD identifies 4 major functional areas but the team is small and domain boundaries are not yet well-understood. Premature decomposition risks creating distributed monolith.
+**上下文：**
+项目是新系统，有 2-3 名开发者。PRD 识别出 4 个主要功能区域，但团队规模小，领域边界尚未很好理解。过早拆分可能产生分布式单体风险。
 
-**Decision:**
-Start as a modular monolith with clear internal module boundaries. Design for future decomposition but deploy as a single unit initially.
+**决定：**
+以模块化单体起步，内部有清晰的模块边界。为未来拆分设计，但初始作为单一单元部署。
 
-**Alternatives Considered:**
-1. Microservices from day one — allows independent deployment but adds operational complexity disproportionate to team size
-2. Serverless functions — good for event-driven workloads but poor fit for the request-response dominant pattern in the PRD
+**备选方案：**
+1. 从第一天就使用微服务 — 允许独立部署，但增加的运维复杂度与团队规模不成比例
+2. Serverless 函数 — 适合事件驱动工作负载，但与 PRD 中占主导的请求-响应模式不匹配
 
-**Rationale:**
-A modular monolith preserves deployment simplicity while enforcing boundary discipline internally. When a module needs independent scaling or deployment, it can be extracted with minimal disruption because boundaries are already defined.
+**理由：**
+模块化单体在保持部署简单性的同时，在内部强制执行边界纪律。当某个模块需要独立扩展或部署时，由于边界已经定义，可以以最小干扰方式进行提取。
 
-**Consequences:**
-- Must maintain strict module boundaries internally (no cross-module DB access)
-- Single deployment unit means coordinated releases
-- Future extraction to microservices is straightforward if boundaries are respected
+**后果：**
+- 必须在内部保持严格的模块边界（不允许跨模块 DB 访问）
+- 单一部署单元意味着需要协调发布
+- 如果边界得到遵守，未来提取为微服务很简单
 
-## Required ADRs
 
-At minimum, the architecture document must include ADRs for:
+## 必须的 ADR
 
-1. **Service decomposition strategy** — monolith vs microservices vs modular monolith
-2. **Tech stack selection** — primary language, framework, and rationale
-3. **Data storage selection** — primary database and rationale
-4. **Integration protocol selection** — how services/systems communicate
+至少必须包含以下 ADR：
 
-Additional ADRs should be recorded for any decision where:
-- There were viable alternatives
-- The choice has significant tradeoffs
-- Future developers would benefit from understanding why
+1. **架构模式选型** — 单体 vs 微服务 vs 模块化单体（对应 §3.2）
+2. **技术栈选型** — 主语言、框架及理由（对应 §3.3）
+3. **数据存储选型** — 主数据库及理由（对应 §3.3）
+4. **通信协议选型** — 服务/系统间通信方式（对应 §3.3）
+
+非 CRUD 架构额外必须的 ADR：
+
+5. **插件/Hook 架构** — 执行语义、隔离模型、扩展机制
+6. **状态机设计** — 状态类型、转换触发、一致性模型
+7. **事件驱动设计** — 事件总线语义、排序保证、错误传播
+8. **内容验证策略** — 哈希算法、验证流程、恢复机制
+
+以下情况也应记录 ADR：
+- 有可行备选方案的决策
+- 选择有显著权衡
+- 未来开发者需要理解原因
+- 设计遵循特定业界模式（记录模式参考）
+
+ADR 在 §3.4 汇总引用，完整内容放在附录 B。

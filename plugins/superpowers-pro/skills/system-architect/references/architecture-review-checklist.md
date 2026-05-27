@@ -1,68 +1,111 @@
 # Architecture Review Checklist
 
-Run this checklist after completing all four architecture dimensions. Each check must pass before the architecture document is finalized.
+架构文档审查清单。在 Reviewer subagent 审查（Step 8）和用户审阅（Step 9）时使用。
 
-## 1. Requirements Coverage
+## 1. 章节完整性
 
-For each requirement in the PRD:
+- [ ] §1 文档概述 — 目的、简介、名词解释、参考文档
+- [ ] §2 业务背景与系统目标 — 背景、目标、MVP 范围、Non-Goals（非空且 ≥3 条）
+- [ ] §3 技术选型与架构决策 — 选型原则、模式对比表、技术对比表、ADR 汇总
+- [ ] §4 总体架构设计 — 架构原则、C4 图、核心链路（含错误路径）
+- [ ] §5 模块设计 — 每个模块有职责/不做什么/核心能力
+- [ ] §6 数据与存储设计 — ER 图、存储选型、数据流转、一致性机制
+- [ ] §7 接口与通信设计 — API 规范、通信模式、事件清单、外部系统集成（如适用）
+- [ ] §8 代码库与工程结构 — 仓库策略、目录结构、分层、依赖关系
+- [ ] §9 非功能设计 — 可用性、性能、安全、可观测性
+- [ ] §10 部署与运维设计 — 环境、部署架构、CI/CD（如适用）
+- [ ] §11 风险与架构演进 — 风险登记（≥3 项）、演进路线、迁移计划（如适用）
 
-- [ ] Functional requirement has a corresponding service/component in the application architecture
-- [ ] Non-functional requirement (performance, availability, etc.) has a corresponding design element in the technical architecture
-- [ ] Data requirement has a corresponding entity and storage strategy in the information architecture
-- [ ] External dependency has a corresponding integration contract in the integration architecture
+章节简化规则：§7 无外部依赖时可简化（注明原因），§10 单进程时可简化（注明原因）。其余永远必须。
 
-**If any requirement is uncovered:** Go back to the relevant architecture dimension and add the missing element. Do not proceed with gaps.
+如果缺少必须章节：回到 Step 5 补充。
 
-## 2. Cross-Dimension Consistency
+## 2. 需求覆盖
 
-- [ ] Service boundaries in application architecture match data ownership in information architecture (no service accessing another's data directly)
-- [ ] API contracts in application architecture match the protocols selected in integration architecture
-- [ ] Tech stack in technical architecture supports the communication patterns defined in application architecture
-- [ ] Deployment topology in technical architecture supports the availability requirements from the PRD
-- [ ] Security approach covers all external interfaces defined in integration architecture
-- [ ] Observability covers all services defined in application architecture
+- [ ] 每个 PRD 功能需求有对应的模块/组件（追溯矩阵验证）
+- [ ] 每个 PRD 非功能需求有对应的设计元素
+- [ ] 每个 PRD 数据需求有对应的实体和存储策略
+- [ ] 每个 PRD 外部依赖有对应的集成契约（如适用）
 
-**If contradictions found:** Resolve by revisiting the earlier dimension (dependency order: application → information → integration → technical).
+验证：追溯矩阵（附录 A）是否覆盖每个 PRD 需求？
 
-## 3. Feasibility
+## 3. 可实现性
 
-- [ ] Team has experience with the selected tech stack (or has a realistic learning plan)
-- [ ] Selected infrastructure is available within the project's cloud/provider constraints
-- [ ] Third-party services in integration architecture have accessible APIs and acceptable SLAs
-- [ ] Budget constraints from PRD are respected (no expensive managed services if budget is tight)
-- [ ] Timeline constraints are realistic given the architecture complexity
+- [ ] 每个组件有清晰的输入/输出类型（不只是接口签名，还有错误类型）
+- [ ] 非平凡组件有算法、伪代码或逐步流程
+- [ ] 有状态组件有状态机（含触发条件 + 守卫条件）
+- [ ] 扩展点有接口签名 + 1 个实现示例 + 注册机制
+- [ ] 持久化数据有具体 Schema 示例
+- [ ] 集成点有适配器错误映射链
 
-**If feasibility issues found:** Adjust tech selections or simplify the architecture. Document the constraint in the risk register.
+红旗信号（任何一条即未通过）：
+- 组件只有接口名
+- "用策略模式" 但无接口签名
+- 状态转换无触发/守卫
+- 错误处理写"处理错误"但无具体错误类型
+- 数据存储无 Schema
+- 技术选型无备选方案
 
-## 4. Risk Identification
+## 4. 跨章节一致性
 
-For each risk, document:
+- [ ] §5 模块边界与 §6 数据所有权一致
+- [ ] §4 API 契约与 §7 通信协议匹配
+- [ ] §3 技术选型与 §4 架构不矛盾
+- [ ] §8 代码库结构与 §5 模块设计匹配
+- [ ] ADR 与设计不矛盾
 
-```markdown
-### Risk: [Title]
-**Likelihood:** High / Medium / Low
-**Impact:** High / Medium / Low
-**Mitigation:** [What to do about it]
-**Contingency:** [What to do if it materializes]
-```
+## 5. 模式锚定
 
-### Common Risk Categories to Check
+- [ ] 每个主要设计选择引用了业界模式（或说明为何偏离）
+- [ ] 无设计选择无理由地重新发明已知模式
+- [ ] 业界模式引用（附录 C）准确
 
-- [ ] **Technical risk** — unproven technology, complex integration, performance unknowns
-- [ ] **Organizational risk** — team skill gaps, key person dependency, vendor lock-in
-- [ ] **Schedule risk** — architecture complexity vs timeline, external dependency availability
-- [ ] **Operational risk** — monitoring gaps, deployment complexity, disaster recovery
-- [ ] **Security risk** — sensitive data handling, authentication gaps, compliance requirements
+## 6. Anti-Pattern 检查
 
-## 5. Completeness
+详见 references/anti-patterns.md：
 
-- [ ] All C4 levels present (Context, Container, Component for key containers)
-- [ ] Domain model covers all entities from PRD
-- [ ] All external systems have interface contracts
-- [ ] ADRs cover the 4 required decisions (decomposition, tech stack, data storage, integration protocol)
-- [ ] Risk register has at least 3 entries
-- [ ] Mermaid diagrams render correctly (valid syntax)
+- [ ] 无接口-only 设计
+- [ ] 无 happy-path-only 序列
+- [ ] 无标签-only 组件
+- [ ] 无状态机无触发
+- [ ] 无扩展点无示例
+- [ ] 无 Schema-less 数据
+- [ ] 无质量标签化（非功能设计有具体机制和量化目标）
+- [ ] Non-Goals 存在且非空（≥3 条）
 
-## Pass Criteria
+## 7. 可行性
 
-All checks in sections 1-4 must pass. Section 5 (Completeness) can have minor gaps if noted in the risk register with a plan to address them.
+- [ ] 团队有技术选型经验（或有学习计划）
+- [ ] 选定基础设施在约束内可用
+- [ ] 外部系统 API 可访问且 SLA 可接受
+- [ ] 预算和时间线约束可行
+
+## 8. 非功能设计具体性
+
+- [ ] 可用性设计有具体机制（多副本/熔断/限流等）和量化目标
+- [ ] 性能设计有容量预估和热路径分析
+- [ ] 安全设计有具体威胁模型和缓解措施
+- [ ] 可观测性有具体指标定义（名称/计算方法/采集点/阈值）
+- [ ] 无模糊标签（如"高性能" "高可用" 但无具体说明）
+
+## 9. 技术选型
+
+- [ ] 架构模式有对比表（方案/优点/缺点/是否采用）
+- [ ] 核心技术有对比表（能力/候选/选定/原因/风险）
+- [ ] 每个选型说明"为什么选"和"为什么不选其他"
+- [ ] 技术风险评估存在
+
+## 通过标准
+
+- §1 章节完整性：必须章节 100% 存在
+- §2-3 需求覆盖 + 可实现性：所有检查必须通过
+- §4-6 一致性 + 模式 + Anti-Pattern：允许 Minor，Blocker 必须修
+- §7 可行性：无硬性阻碍
+- §8 非功能具体性：所有维度有具体决策
+- §9 技术选型：所有必须对比表存在
+
+Blocker 级问题（必须修复才能通过）：
+- 缺少必须章节
+- 组件无法独立实现
+- 存在 anti-pattern 且影响可实现性
+- 需求覆盖有缺口
