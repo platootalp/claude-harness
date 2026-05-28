@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **variables: 新增技能** — `/superpowers-pro:variables` 查看所有变量，`/superpowers-pro:variables <name> <value>` 修改变量；严格校验值合法性；修改后当前会话立即生效
+
 ## [0.10.0] - 2026-05-28
 
 ### Changed
