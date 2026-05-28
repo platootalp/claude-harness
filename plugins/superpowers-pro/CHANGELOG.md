@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.0] - 2026-05-28
+
+### Added
+- **variables.json: 全局变量配置** — 定义 finish-mode 和 review-mode 变量，支持全局默认 + 命令覆盖 + 会话覆盖三级优先级
+- **session-start hook: 变量注入** — 读取 variables.json 并注入到会话上下文
+- **finishing-a-development-branch: 重写为 auto/interactive 双模式** — auto 模式为确定性合并推送清理流程，interactive 模式保留菜单选择；引用 finish-mode 变量控制行为
+- **issue-scanning: 新增技能** — /fix 第一步，系统性扫描指定领域的所有潜在问题，产出 P0/P1/P2 问题清单
+- **refactor-assessment: 新增技能** — /refactor 第一步，评估代码结构/性能/可维护性，识别重构目标和行为不变性
+- **命令瘦身: 四个命令委托 skill 执行** — /feature、/fix、/refactor、/init-system 有对应 skill 的步骤只保留调用行 + 检查点 + 产出物，执行细节委托给 skill
+
+### Changed
+- **brainstorming: 迁移 review-mode 到 variables 块** — frontmatter 从自定义字段改为 variables 列表引用 variables.json；body 中引用方式更新为 "定义在 variables.json"
+
 ## [0.6.0] - 2026-05-27
 
 ### Changed
