@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0] - 2026-05-28
+
+### Changed
+- **prd-generator: 重写为调研驱动 8 阶段流程** — Core Workflow 从简单发现→生成→验证改为 Phase 0-7（目标对齐→竞品调研→问题提取→二次澄清→方案头脑风暴→MVP 收敛→PRD 撰写→验证审查）；去掉 brainstorming 依赖；新增 competitive-researcher 和 prd-reviewer 子代理 prompt
+
+### Removed
+- **prd-generation: 移除技能** — 合并到 prd-generator；init.md Step 1 调用名从 prd-generation 改为 prd-generator
+
 ## [0.9.0] - 2026-05-28
 
 ### Added
