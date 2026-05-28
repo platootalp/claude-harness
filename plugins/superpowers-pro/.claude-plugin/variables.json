@@ -1,0 +1,12 @@
+{
+  "finish-mode": {
+    "default": "auto",
+    "values": ["auto", "interactive"],
+    "description": "auto = 确定性合并推送清理; interactive = 菜单选择模式"
+  },
+  "review-mode": {
+    "default": "section-by-section",
+    "values": ["section-by-section", "full"],
+    "description": "section-by-section = 分节审批; full = 一次展示"
+  }
+}
