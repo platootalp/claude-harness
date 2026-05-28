@@ -1,7 +1,7 @@
 ---
 name: brainstorming
 description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
-review-mode: section-by-section
+variables: [review-mode]
 ---
 
 # Brainstorming Ideas Into Designs
@@ -20,7 +20,7 @@ Every project goes through this process. A todo list, a single-function utility,
 
 ## Review Modes
 
-The `review-mode` frontmatter variable controls how the design is presented:
+The `review-mode` variable (defined in variables.json) controls how the design is presented:
 
 - **`section-by-section`** (default): Present design section by section, get user approval after each section. Best for complex designs where early course-correction saves rework.
 - **`full`**: Present the complete design at once, skip per-section approval pauses. Best when the user trusts the agent's judgment or wants to move fast. The User Review Gate (after spec is written) still applies.
@@ -157,7 +157,7 @@ Wait for the user's response. If they request changes, make them and re-run the 
 - **Multiple choice preferred** - Easier to answer than open-ended when possible
 - **YAGNI ruthlessly** - Remove unnecessary features from all designs
 - **Explore alternatives** - Always propose 2-3 approaches before settling
-- **Incremental validation** - Present design, get approval before moving on (only when `review-mode: section-by-section`)
+- **Incremental validation** - Present design, get approval before moving on (only when `review-mode` is `section-by-section`)
 - **Be flexible** - Go back and clarify when something doesn't make sense
 
 ## Visual Companion
