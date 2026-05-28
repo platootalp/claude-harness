@@ -1,5 +1,5 @@
 ---
-description: "Bug 修复完整流水线 — 从根因诊断到修复交付，8 步显式编排，防止步骤静默丢失"
+description: "Bug 修复完整流水线 — 从问题扫描到修复交付，8 步显式编排，防止步骤静默丢失"
 argument-hint: "<issue-description>"
 effort: high
 ---
@@ -22,7 +22,7 @@ effort: high
 
 ▶ /fix 启动 — Bug 修复工作流
 
-  Step 1/8  DIAGNOSE      □  根因调查，产出 issue 文档
+  Step 1/8  DIAGNOSE      □  系统性问题扫描，产出 issue 文档
   Step 2/8  SPEC_REVIEW   □  issue 文档审批（唯一人类检查点）
   Step 3/8  ISOLATE       □  Worktree 隔离 + 基线验证
   Step 4/8  PLAN          □  拆解 bite-sized 任务
@@ -35,50 +35,12 @@ effort: high
 
 ## Step 1/8: DIAGNOSE
 
-调用 `superpowers-pro:systematic-debugging` skill 的 Phase 1-3（仅调查，不修复）。
-
-- Phase 1 — 根因调查:
-  - 读错误信息
-  - 稳定复现
-  - 检查最近变更（git log, git diff）
-  - 追踪数据流
-  - **必须完成才能进入 Phase 2**
-
-- Phase 2 — 模式分析:
-  - 找正常样例
-  - 对比差异
-  - 理解依赖关系
-
-- Phase 3 — 假设验证:
-  - 形成单一假设
-  - 最小化验证
-  - 单变量确认
-
-产出 issue 文档至 `docs/superpowers-pro/issues/YYYY-MM-DD-<issue-name>.md`，格式:
-
-```markdown
-# Issue: <标题>
-
-## 根因
-<根因描述>
-
-## 影响范围
-<受影响的文件/模块/用户场景>
-
-## 复现条件
-<复现步骤或触发条件>
-
-## 修复假设
-<基于根因的修复方向，可能多个>
-
-## 风险
-<修复可能引入的副作用>
-```
+调用 `superpowers-pro:issue-scanning` skill。
 
 如果诊断发现此问题需要新设计（非简单 bug），停止并建议用户改用 `/feature`。
 
-检查点: `━━━ [✓] Step 1/8: DIAGNOSE — 根因已定位，issue 文档已产出`
-产出物: `docs/superpowers-pro/issues/YYYY-MM-DD-<issue-name>.md`
+检查点: `━━━ [✓] Step 1/8: DIAGNOSE — 问题清单已产出`
+产出物: `docs/superpowers-pro/issues/YYYY-MM-DD-<scope>-issues.md`
 
 ## Step 2/8: SPEC_REVIEW
 
@@ -95,8 +57,6 @@ effort: high
 
 调用 `superpowers-pro:using-git-worktrees` skill。
 
-- 检测现有隔离 → 创建 worktree → 安装依赖 → 验证基线测试通过
-
 检查点: `━━━ [✓] Step 3/8: ISOLATE — Worktree 已创建，基线测试通过`
 产出物: worktree 路径 + 分支名 + 基线测试通过
 
@@ -104,10 +64,7 @@ effort: high
 
 调用 `superpowers-pro:writing-plans` skill。
 
-- 将修复方案拆解为 bite-sized 任务（每步 2-5 分钟，TDD 取向）
-- 无占位符
-- 固定使用 subagent-driven-development
-- 保存至 `docs/superpowers-pro/plans/YYYY-MM-DD-<fix-name>.md`
+保存至 `docs/superpowers-pro/plans/YYYY-MM-DD-<fix-name>.md`。
 
 检查点: `━━━ [✓] Step 4/8: PLAN — 实施计划已产出`
 产出物: `docs/superpowers-pro/plans/YYYY-MM-DD-<fix-name>.md`
@@ -118,10 +75,12 @@ effort: high
 
 每个 task 强制执行:
 1. `superpowers-pro:test-driven-development` — RED → GREEN → REFACTOR
-2. spec reviewer 子代理审查
-3. code quality reviewer 子代理审查
+2. spec reviewer 子代理审查 — 不通过则 implementer 修复后重新审查
+3. code quality reviewer 子代理审查 — 不通过则 implementer 修复后重新审查
 
 **无子代理可用时: 报错停止。**
+
+连续执行所有 task，不在 task 之间暂停问人。
 
 检查点: `━━━ [✓] Step 5/8: IMPLEMENT — 所有 task 完成`
 产出物: 所有 task 标记完成 + 最终提交 SHA
@@ -129,9 +88,6 @@ effort: high
 ## Step 6/8: REVIEW
 
 调用 `superpowers-pro:requesting-code-review` skill。
-
-- 派发 final code reviewer 子代理审查整体修复
-- 自动处理反馈: Critical 立即修 → Important 继续前修 → Minor 记录 → 审查者有误反驳
 
 检查点: `━━━ [✓] Step 6/8: REVIEW — 代码审查完成`
 产出物: 审查报告 + 反馈处理结果
@@ -152,12 +108,7 @@ effort: high
 
 ## Step 8/8: FINISH
 
-1. 记录初始分支名（用户启动 /fix 时所在的分支）
-2. 合并 worktree 分支到初始分支
-3. 合并后运行测试验证 — 失败则自动回滚合并并报告
-4. 推送初始分支到远端
-5. 清理 worktree（provenance 校验）
-6. 删除 fix impl 分支
+调用 `superpowers-pro:finishing-a-development-branch` skill（finish-mode: auto）。
 
 检查点: `━━━ [✓] Step 8/8: FINISH — 已合并到 <初始分支> 并推送`
 产出物: 合并结果 + 推送结果 + 清理结果

@@ -22,27 +22,20 @@ effort: high
 
 ▶ /feature 启动 — 功能开发工作流
 
-- Step 1/8  BRAINSTORM    □  探索需求，产出 spec 文档 
-- Step 2/8  SPEC_REVIEW   □  spec 审批（唯一人类检查点） 
-- Step 3/8  ISOLATE       □  Worktree 隔离 + 基线验证 
-- Step 4/8  PLAN          □  拆解 bite-sized 任务 
-- Step 5/8  IMPLEMENT     □  TDD + 双重审查逐 task 执行 
-- Step 6/8  REVIEW        □  整体代码审查 
-- Step 7/8  VERIFY        □  验证门控 
+- Step 1/8  BRAINSTORM    □  探索需求，产出 spec 文档
+- Step 2/8  SPEC_REVIEW   □  spec 审批（唯一人类检查点）
+- Step 3/8  ISOLATE       □  Worktree 隔离 + 基线验证
+- Step 4/8  PLAN          □  拆解 bite-sized 任务
+- Step 5/8  IMPLEMENT     □  TDD + 双重审查逐 task 执行
+- Step 6/8  REVIEW        □  整体代码审查
+- Step 7/8  VERIFY        □  验证门控
 - Step 8/8  FINISH        □  合并到初始分支 + 推送 + 清理
 
 ---
 
 ## Step 1/8: BRAINSTORM
 
-调用 `superpowers-pro:brainstorming` skill。
-
-- 探索项目上下文（文件、文档、最近提交）
-- 逐一提问澄清需求（一次一问，偏好多选）
-- 提出 2-3 种方案 + 权衡 + 推荐
-- 分节展示设计，每节确认
-- 写设计文档至 `docs/superpowers-pro/specs/YYYY-MM-DD-<topic>-design.md`
-- 设计文档自审：占位符扫描、一致性检查、范围检查、歧义检查
+调用 `superpowers-pro:brainstorming` skill（review-mode: section-by-section）。
 
 如果发现此需求不需要新设计（只是 bug 修复或小调整），停止并建议用户改用 `/fix` 或 `/refactor`。
 
@@ -65,12 +58,6 @@ effort: high
 
 调用 `superpowers-pro:using-git-worktrees` skill。
 
-- 检测现有隔离（GIT_DIR vs GIT_COMMON）
-- 优先使用原生 worktree 工具（EnterWorktree）
-- 回退 git worktree（`.worktrees/` 目录）
-- 安装项目依赖
-- 验证基线测试通过
-
 检查点: `━━━ [✓] Step 3/8: ISOLATE — Worktree 已创建，基线测试通过`
 产出物: worktree 路径 + 分支名 + 基线测试通过
 
@@ -78,11 +65,7 @@ effort: high
 
 调用 `superpowers-pro:writing-plans` skill。
 
-- 将设计拆解为 bite-sized 任务（每步 2-5 分钟，TDD 取向）
-- 无占位符（TBD/TODO/"implement later" 均禁止）
-- 固定使用 subagent-driven-development
-- 保存至 `docs/superpowers-pro/plans/YYYY-MM-DD-<feature-name>.md`
-- 计划文档头部标注: `REQUIRED SUB-SKILL: superpowers-pro:subagent-driven-development`
+保存至 `docs/superpowers-pro/plans/YYYY-MM-DD-<feature-name>.md`。
 
 检查点: `━━━ [✓] Step 4/8: PLAN — 实施计划已产出`
 产出物: `docs/superpowers-pro/plans/YYYY-MM-DD-<feature-name>.md`
@@ -107,26 +90,12 @@ effort: high
 
 调用 `superpowers-pro:requesting-code-review` skill。
 
-- 派发 final code reviewer 子代理审查整体实现
-- 自动处理反馈:
-  - Critical → 立即修复
-  - Important → 继续前修复
-  - Minor → 记录后续
-  - 审查者有误 → 理性反驳
-
 检查点: `━━━ [✓] Step 6/8: REVIEW — 代码审查完成`
 产出物: 审查报告 + 反馈处理结果
 
 ## Step 7/8: VERIFY
 
 调用 `superpowers-pro:verification-before-completion` skill。
-
-执行完整门控:
-1. IDENTIFY — 什么命令能证明完成?
-2. RUN — 完整运行（当前、全新）
-3. READ — 完整输出，检查退出码
-4. VERIFY — 输出是否确认声明?
-5. ONLY THEN — 做出声明
 
 重读 spec 文档 + 计划，逐条检查需求覆盖率。未覆盖的 gap 必须记录。
 
@@ -135,12 +104,7 @@ effort: high
 
 ## Step 8/8: FINISH
 
-1. 记录初始分支名（用户启动 /feature 时所在的分支）
-2. 合并 worktree 分支到初始分支
-3. 合并后运行测试验证 — 失败则自动回滚合并并报告
-4. 推送初始分支到远端
-5. 清理 worktree（仅清理 provenance 目录: `.worktrees/`、`worktrees/`、`~/.config/superpowers-pro/worktrees/`）
-6. 删除 feature impl 分支
+调用 `superpowers-pro:finishing-a-development-branch` skill（finish-mode: auto）。
 
 检查点: `━━━ [✓] Step 8/8: FINISH — 已合并到 <初始分支> 并推送`
 产出物: 合并结果 + 推送结果 + 清理结果

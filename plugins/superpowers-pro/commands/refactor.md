@@ -35,40 +35,13 @@ effort: high
 
 ## Step 1/8: ASSESS
 
-分析当前代码结构，识别重构目标。不需要诊断根因（根因已知: 代码结构差/性能差/可维护性差）。
-
-- 阅读相关代码，理解当前结构
-- 识别要重构的模块/函数/文件
-- 确定重构后的目标状态
-- 识别行为不变性（重构过程中必须保持不变的行为）
-- 评估风险和影响范围
-
-产出 refactor 文档至 `docs/superpowers-pro/refactors/YYYY-MM-DD-<refactor-name>.md`，格式:
-
-```markdown
-# Refactor: <标题>
-
-## 当前问题
-<为什么要重构: 性能、可维护性、可读性等>
-
-## 重构目标
-<重构后的目标状态>
-
-## 行为不变性
-<重构过程中必须保持不变的行为，作为验证基准>
-
-## 风险点
-<重构可能破坏的东西>
-
-## 影响范围
-<受影响的文件/模块>
-```
+调用 `superpowers-pro:refactor-assessment` skill。
 
 如果评估发现此问题实际是 bug（有错误行为），停止并建议用户改用 `/fix`。
 如果评估发现需要新设计，停止并建议用户改用 `/feature`。
 
 检查点: `━━━ [✓] Step 1/8: ASSESS — 重构目标已评估，refactor 文档已产出`
-产出物: `docs/superpowers-pro/refactors/YYYY-MM-DD-<refactor-name>.md`
+产出物: `docs/superpowers-pro/refactors/YYYY-MM-DD-<target>.md`
 
 ## Step 2/8: SPEC_REVIEW
 
@@ -85,8 +58,6 @@ effort: high
 
 调用 `superpowers-pro:using-git-worktrees` skill。
 
-- 检测现有隔离 → 创建 worktree → 安装依赖 → 验证基线测试通过
-
 检查点: `━━━ [✓] Step 3/8: ISOLATE — Worktree 已创建，基线测试通过`
 产出物: worktree 路径 + 分支名 + 基线测试通过
 
@@ -94,10 +65,7 @@ effort: high
 
 调用 `superpowers-pro:writing-plans` skill。
 
-- 将重构方案拆解为 bite-sized 任务（每步 2-5 分钟，TDD 取向）
-- 无占位符
-- 固定使用 subagent-driven-development
-- 保存至 `docs/superpowers-pro/plans/YYYY-MM-DD-<refactor-name>.md`
+保存至 `docs/superpowers-pro/plans/YYYY-MM-DD-<refactor-name>.md`。
 
 检查点: `━━━ [✓] Step 4/8: PLAN — 实施计划已产出`
 产出物: `docs/superpowers-pro/plans/YYYY-MM-DD-<refactor-name>.md`
@@ -108,10 +76,12 @@ effort: high
 
 每个 task 强制执行:
 1. `superpowers-pro:test-driven-development` — RED → GREEN → REFACTOR
-2. spec reviewer 子代理审查
-3. code quality reviewer 子代理审查
+2. spec reviewer 子代理审查 — 不通过则 implementer 修复后重新审查
+3. code quality reviewer 子代理审查 — 不通过则 implementer 修复后重新审查
 
 **无子代理可用时: 报错停止。**
+
+连续执行所有 task，不在 task 之间暂停问人。
 
 检查点: `━━━ [✓] Step 5/8: IMPLEMENT — 所有 task 完成`
 产出物: 所有 task 标记完成 + 最终提交 SHA
@@ -119,9 +89,6 @@ effort: high
 ## Step 6/8: REVIEW
 
 调用 `superpowers-pro:requesting-code-review` skill。
-
-- 派发 final code reviewer 子代理审查整体重构
-- 自动处理反馈: Critical 立即修 → Important 继续前修 → Minor 记录 → 审查者有误反驳
 
 检查点: `━━━ [✓] Step 6/8: REVIEW — 代码审查完成`
 产出物: 审查报告 + 反馈处理结果
@@ -142,12 +109,7 @@ effort: high
 
 ## Step 8/8: FINISH
 
-1. 记录初始分支名（用户启动 /refactor 时所在的分支）
-2. 合并 worktree 分支到初始分支
-3. 合并后运行测试验证 — 失败则自动回滚合并并报告
-4. 推送初始分支到远端
-5. 清理 worktree（provenance 校验）
-6. 删除 refactor impl 分支
+调用 `superpowers-pro:finishing-a-development-branch` skill（finish-mode: auto）。
 
 检查点: `━━━ [✓] Step 8/8: FINISH — 已合并到 <初始分支> 并推送`
 产出物: 合并结果 + 推送结果 + 清理结果

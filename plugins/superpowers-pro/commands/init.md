@@ -37,11 +37,6 @@ effort: high
 
 调用 `superpowers-pro:prd-generation` skill。
 
-- 询问用户选择模式：头脑风暴 / 竞品对标
-- 头脑风暴模式：从想法出发，问答澄清，产出 PRD
-- 竞品对标模式：派发 competitive-researcher subagent 研究竞品，差异化定位，产出 PRD
-- PRD 自审：派发 prd-reviewer subagent 审查
-
 检查点: `━━━ [✓] Step 1/8: PRD — PRD 已产出`
 产出物: `docs/superpowers-pro/projects/<project>/YYYY-MM-DD-<project>-prd.md`
 
@@ -60,14 +55,7 @@ effort: high
 
 调用 `superpowers-pro:system-architect` skill。
 
-- 确认 PRD 就绪（硬门控: 无 PRD 不做架构）
-- 四层架构设计:
-  1. 应用架构（C4 图: Context → Container → Component、服务边界、API 契约）
-  2. 信息架构（领域模型、数据流、存储策略、一致性）
-  3. 集成架构（外部接口、协议、同步策略、故障隔离）
-  4. 技术架构（技术栈、部署拓扑、安全、可观测性）
-- 产出 ADR（Architecture Decision Records）
-- 架构文档自审: 覆盖率、一致性、可行性、风险识别
+确认 PRD 就绪（硬门控: 无 PRD 不做架构）。
 
 检查点: `━━━ [✓] Step 3/8: ARCHITECT — 架构设计完成`
 产出物: `docs/superpowers-pro/projects/<project>/YYYY-MM-DD-<project>-architecture.md` + `docs/superpowers-pro/projects/<project>/adr/` 下的 ADR 文件
@@ -109,7 +97,7 @@ effort: high
 
 路线图文档结构:
 
-```
+```markdown
 # <项目名称> 路线图
 
 ## 里程碑规划
@@ -160,19 +148,7 @@ effort: high
 
 ## Step 8/8: FINISH
 
-1. 初始化 git 仓库（如果尚未是 git 仓库）:
-
-```bash
-git init
-git add .
-git commit -m "init: project skeleton based on architecture design"
-```
-
-2. 推送到远端:
-   - 自动检测已有 origin → 推送
-   - 无 origin → 询问用户远端地址后推送
-
-3. 不做合并（0→1 项目，无分支合并概念）
+调用 `superpowers-pro:finishing-a-development-branch` skill（finish-mode: auto）。
 
 检查点: `━━━ [✓] Step 8/8: FINISH — 初始提交完成并推送`
 产出物: 初始提交 SHA + 远端推送结果
