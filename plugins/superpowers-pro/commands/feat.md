@@ -22,14 +22,14 @@ effort: high
 
 ▶ /feature 启动 — 功能开发工作流
 
-  Step 1/8  BRAINSTORM    □  探索需求，产出 spec 文档
-  Step 2/8  SPEC_REVIEW   □  spec 审批（唯一人类检查点）
-  Step 3/8  ISOLATE       □  Worktree 隔离 + 基线验证
-  Step 4/8  PLAN          □  拆解 bite-sized 任务
-  Step 5/8  IMPLEMENT     □  TDD + 双重审查逐 task 执行
-  Step 6/8  REVIEW        □  整体代码审查
-  Step 7/8  VERIFY        □  验证门控
-  Step 8/8  FINISH        □  合并到初始分支 + 推送 + 清理
+- Step 1/8  BRAINSTORM    □  探索需求，产出 spec 文档 
+- Step 2/8  SPEC_REVIEW   □  spec 审批（唯一人类检查点） 
+- Step 3/8  ISOLATE       □  Worktree 隔离 + 基线验证 
+- Step 4/8  PLAN          □  拆解 bite-sized 任务 
+- Step 5/8  IMPLEMENT     □  TDD + 双重审查逐 task 执行 
+- Step 6/8  REVIEW        □  整体代码审查 
+- Step 7/8  VERIFY        □  验证门控 
+- Step 8/8  FINISH        □  合并到初始分支 + 推送 + 清理
 
 ---
 

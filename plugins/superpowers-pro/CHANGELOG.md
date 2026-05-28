@@ -14,7 +14,7 @@
 
 ### Added
 
-- **brainstorming: 新增 review-mode frontmatter 变量** — 支持 `section-by-section`（默认，每节确认）和 `full`（一次性呈现，跳过分节确认）两种设计呈现模式；`full` 模式下 User Review Gate 仍保留
+- **brainstorming: 新增 review-mode frontmatter 变量** — 支持 `section-by-section`（默认，每节确认）和 `full`（一次性呈现，跳过分节确认）两种设计呈现模式；`full` 模式下 User Review Gate 仍保留；支持会话内指令覆盖 frontmatter 默认值
 
 ### Removed
 

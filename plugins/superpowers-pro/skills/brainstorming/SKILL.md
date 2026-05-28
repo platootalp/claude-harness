@@ -25,6 +25,8 @@ The `review-mode` frontmatter variable controls how the design is presented:
 - **`section-by-section`** (default): Present design section by section, get user approval after each section. Best for complex designs where early course-correction saves rework.
 - **`full`**: Present the complete design at once, skip per-section approval pauses. Best when the user trusts the agent's judgment or wants to move fast. The User Review Gate (after spec is written) still applies.
 
+**Per-session override:** The user can override the frontmatter default at any time by stating their preference in the conversation (e.g. "use full mode", "分节确认"). Honor the user's stated preference for that session over the frontmatter value.
+
 ## Checklist
 
 You MUST create a task for each of these items and complete them in order:
