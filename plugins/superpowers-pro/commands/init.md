@@ -35,7 +35,7 @@ effort: high
 
 ## Step 1/8: PRD
 
-调用 `superpowers-pro:prd-generation` skill。
+调用 `superpowers-pro:prd-generator` skill。
 
 检查点: `━━━ [✓] Step 1/8: PRD — PRD 已产出`
 产出物: `docs/superpowers-pro/projects/<project>/YYYY-MM-DD-<project>-prd.md`
