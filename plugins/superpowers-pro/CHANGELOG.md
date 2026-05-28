@@ -12,6 +12,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- **brainstorming: 新增 review-mode frontmatter 变量** — 支持 `section-by-section`（默认，每节确认）和 `full`（一次性呈现，跳过分节确认）两种设计呈现模式；`full` 模式下 User Review Gate 仍保留
+
 ### Removed
 
 - **executing-plans: 移除技能** — subagent-driven-development 成为唯一开发执行流程；writing-plans 不再提供执行方式选择，计划完成后直接使用 SDD；SDD 决策图简化，移除 executing-plans 对比和引用
