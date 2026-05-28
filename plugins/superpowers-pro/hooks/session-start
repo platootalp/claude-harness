@@ -17,6 +17,25 @@ fi
 # Read using-superpowers content
 using_superpowers_content=$(cat "${PLUGIN_ROOT}/skills/using-superpowers/SKILL.md" 2>&1 || echo "Error reading using-superpowers skill")
 
+# Read variables configuration
+variables_content=""
+variables_file="${PLUGIN_ROOT}/.claude-plugin/variables.json"
+if [ -f "$variables_file" ]; then
+    variables_raw=$(cat "$variables_file")
+    # Format as compact key: value (options) — description per line
+    variables_content=$(
+        echo "$variables_raw" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+lines = []
+for key, val in data.items():
+    opts = ', '.join(val['values'])
+    lines.append(f\"{key}: {val['default']} (可选: {opts}) — {val['description']}\")
+print('\n'.join(lines))
+" 2>/dev/null || echo ""
+    )
+fi
+
 # Escape string for JSON embedding using bash parameter substitution.
 # Each ${s//old/new} is a single C-level pass - orders of magnitude
 # faster than the character-by-character loop this replaces.
@@ -32,7 +51,15 @@ escape_for_json() {
 
 using_superpowers_escaped=$(escape_for_json "$using_superpowers_content")
 warning_escaped=$(escape_for_json "$warning_message")
-session_context="<EXTREMELY_IMPORTANT>\nYou have superpowers.\n\n**Below is the full content of your 'superpowers-pro:using-superpowers' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${using_superpowers_escaped}\n\n${warning_escaped}\n</EXTREMELY_IMPORTANT>"
+
+# Build variables section
+variables_section=""
+if [ -n "$variables_content" ]; then
+    variables_escaped=$(escape_for_json "$variables_content")
+    variables_section="\n\n[superpowers-pro variables]\n${variables_escaped}"
+fi
+
+session_context="<EXTREMELY_IMPORTANT>\nYou have superpowers.\n\n**Below is the full content of your 'superpowers-pro:using-superpowers' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${using_superpowers_escaped}\n\n${warning_escaped}${variables_section}\n</EXTREMELY_IMPORTANT>"
 
 # Output context injection as JSON.
 # Cursor hooks expect additional_context (snake_case).
