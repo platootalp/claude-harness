@@ -173,7 +173,9 @@ variables: [finish-mode]
 
 **与 systematic-debugging 的区别：**
 - systematic-debugging：诊断单个已知 bug 的根因（深度优先）
-- issue-scanning：系统性发现所有潜在问题（广度优先）
+- issue-scanning：系统性发现指定领域的所有潜在问题（广度优先）
+
+**输入区分：** 如果用户指定单个已知 bug（"修复 X 崩溃"），issue-scanning 聚焦定位该 bug 的根因及关联问题；如果用户指定一个领域/模块（"检查支付模块的所有问题"），则走广度扫描。不存在与 /fix 的循环——/fix 的 issue-scanning 是第一步，产出问题清单后由用户在 SPEC_REVIEW 选择修复哪些。
 
 **流程：**
 1. 理解扫描范围（用户指定的模块/功能/领域）
