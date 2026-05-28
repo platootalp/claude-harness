@@ -4,7 +4,7 @@ argument-hint: "<project-name>"
 effort: high
 ---
 
-# /init-system — 系统初始化工作流
+# /init — 系统初始化工作流
 
 你正在执行系统初始化完整流水线。严格按照以下 8 步顺序执行，每步必须输出检查点，下一步开始前必须确认上一步检查点。
 
@@ -20,7 +20,7 @@ effort: high
 
 ## 进度总览
 
-▶ /init-system 启动 — 系统初始化工作流
+▶ /init 启动 — 系统初始化工作流
 
   Step 1/8  PRD           □  产品需求文档（头脑风暴或竞品对标）
   Step 2/8  PRD_REVIEW    □  PRD 审批（人类检查点 1）
