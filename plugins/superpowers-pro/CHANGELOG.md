@@ -3,7 +3,17 @@
 ## [Unreleased]
 
 ### Added
+- **using-git-worktrees: 新增 Step 0.5 + Step 2.5** — Step 0.5（Confirm Source Branch）在创建 worktree 前显式确认源分支（优先级：EXPLICIT_SOURCE_BRANCH > 菜单选择 > 报错）；Step 2.5 把确认后的源分支持久化到 per-worktree git config（`superpowers.sourceBranch` + `superpowers.sourceCommit`），git < 2.20 走文件 fallback
+- **finishing-a-development-branch: 源分支感知 merge** — Step 3 改为读 worktree 元数据（不依赖主仓库 HEAD）；Step 4 auto 实现 3 种 merge 路径（2a active worktree / 2b fast-forward / 2c 临时 worktree），全流程不切换主仓库
+- **finishing-a-development-branch: PR/MR 多平台支持** — 去除 `gh` 硬依赖；用 `git push` + URL 推导支持 GitHub Pull Request 和 GitLab Merge Request，未识别平台 fallback 提示
+- **finishing-a-development-branch: 3 个 reference + 6 个 evals** — `references/source-resolution.md`、`references/pr-mr-creation.md`、`references/test-scenarios.md`（15 scenarios for A1-A11）；`evals/01..13` 6 个 bash 脚本验证 A1/A2/A4/A7/A8/A9
 - **variables: 新增技能** — `/superpowers-pro:variables` 查看所有变量，`/superpowers-pro:variables <name> <value>` 修改变量；严格校验值合法性；修改后当前会话立即生效
+
+### Changed
+- **finishing-a-development-branch Step 3**："Determine Base Branch"（git merge-base 推断）→ "Determine Source Branch"（读 worktree 元数据）
+- **finishing-a-development-branch Step 4 auto**：移除所有 `cd $MAIN_ROOT && git checkout`；主仓库 HEAD 全程不变
+- **finishing-a-development-branch Interactive Option 2**：`gh pr create` → 通用 push + URL 输出
+- **commands (feat/fix/refactor)**：Step 8 检查点描述"合并到初始分支" → "合并到源分支"
 
 ## [0.10.0] - 2026-05-28
 
