@@ -14,6 +14,11 @@
       "name": "kb",
       "source": "./plugins/kb",
       "description": "知识库管理插件 — 从代码仓库提取、转化、加载和呈现知识"
+    },
+    {
+      "name": "self-evolution",
+      "source": "./plugins/self-evolution",
+      "description": "自动从对话中提取可复用工作流并生成 skill — companion-mode 后台审查、安全门控、元技能驱动内容生成"
     }
   ]
 }
