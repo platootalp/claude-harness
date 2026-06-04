@@ -280,19 +280,40 @@ git merge <feature-branch>
 ```
 Then: Cleanup (Step 5), delete branch: `git branch -d <feature-branch>`
 
-**Option 2: Push and Create PR**
-```bash
-git push -u origin <feature-branch>
-gh pr create --title "<title>" --body "$(cat <<'EOF'
-## Summary
-<2-3 bullets>
+**Option 2: Push and Create PR/MR**
 
-## Test Plan
-- [ ] <verification steps>
-EOF
-)"
+通用方案，不依赖 `gh` / `glab` CLI。详见 `references/pr-mr-creation.md`。
+
+```bash
+git push -u origin "$WT_BRANCH"
+
+REMOTE_URL=$(git remote get-url origin)
+WEB_URL=$(echo "$REMOTE_URL" | sed -E 's#^git@([^:]+):#https://\1/#; s#\.git$##;')
+
+case "$WEB_URL" in
+  *github.com*|*github*)
+    CREATE_URL="${WEB_URL}/compare/${WT_BRANCH}?expand=1"
+    PLATFORM="GitHub Pull Request"
+    ;;
+  *gitlab*)
+    CREATE_URL="${WEB_URL}/-/merge_requests/new?merge_request[source_branch]=${WT_BRANCH}"
+    PLATFORM="GitLab Merge Request"
+    ;;
+  *)
+    CREATE_URL=""
+    PLATFORM="未识别平台"
+    ;;
+esac
+
+echo "Branch pushed: $WT_BRANCH"
+if [ -n "$CREATE_URL" ]; then
+  echo "Create $PLATFORM at: $CREATE_URL"
+else
+  echo "Detected non-GitHub/GitLab remote. Please create PR/MR manually."
+  echo "Remote URL: $REMOTE_URL"
+fi
 ```
-**Do NOT cleanup worktree** — user needs it for PR iteration.
+**Do NOT cleanup worktree** — user needs it for PR/MR iteration.
 
 **Option 3: Keep As-Is**
 Report: "Keeping branch <name>. Worktree preserved at <path>."
