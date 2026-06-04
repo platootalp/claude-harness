@@ -29,9 +29,10 @@ git config --worktree superpowers.sourceCommit <sha>
 ## 3. Source 形态检测（Step 4 开头）
 
 ```bash
+# 用 sub() 而非 $2，保留路径中的空格
 SOURCE_WT=$(git worktree list --porcelain | \
   awk -v src="refs/heads/$SOURCE_BRANCH" '
-    /^worktree / { wt=$2 }
+    /^worktree / { wt=$0; sub(/^worktree /, "", wt) }
     /^branch / { if ($2 == src) print wt }
   ')
 ```

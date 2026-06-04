@@ -47,7 +47,7 @@ WT_BRANCH=$(git branch --show-current)
 
 SOURCE_WT=$(git worktree list --porcelain | \
   awk -v src="refs/heads/$SOURCE_BRANCH" '
-    /^worktree / { wt=$2 }
+    /^worktree / { wt=$0; sub(/^worktree /, "", wt) }
     /^branch / { if ($2 == src) print wt }
   ')
 

@@ -141,9 +141,10 @@ fi
 # === Source 形态检测 ===
 
 # 查找 source branch 是否在 active worktree 中
+# 注意：用 sub() 而非 $2，保留路径中的空格
 SOURCE_WT=$(git worktree list --porcelain | \
   awk -v src="refs/heads/$SOURCE_BRANCH" '
-    /^worktree / { wt=$2 }
+    /^worktree / { wt=$0; sub(/^worktree /, "", wt) }
     /^branch / { if ($2 == src) print wt }
   ')
 
@@ -181,6 +182,7 @@ elif git fetch . "$WT_BRANCH:$SOURCE_BRANCH" 2>/dev/null; then
 
 else
   # --- 2c: source 仅 ref + 非 ff → 临时 worktree 处理 ---
+  # 用 mktemp -d 生成空目录（git worktree add 接受空目录）+ trap 兜底 cleanup
   TMP_WT=$(mktemp -d -t superpowers-merge-XXXXXX)
   trap "git worktree remove --force '$TMP_WT' 2>/dev/null; rm -rf '$TMP_WT'" EXIT
 
@@ -190,6 +192,8 @@ else
     echo "Merge conflict in temporary worktree at $TMP_WT."
     echo "This is rare (non-ff with no active source worktree)."
     echo "Please cd to $TMP_WT to resolve, then reply 'continue' to resume finish."
+    # 关键：解除 EXIT trap，保留 $TMP_WT 供用户解决冲突（否则 exit 1 触发 trap 会摧毁工作）
+    trap - EXIT
     popd > /dev/null
     exit 1
   fi
@@ -200,7 +204,10 @@ fi
 # === 运行测试（merge 结果）===
 if [ "${SKIP_MERGE_TEST:-false}" != "true" ]; then
   pushd "$RUN_DIR" > /dev/null
-  # <test command>  # npm test / cargo test / pytest / go test ./...
+  # === 替换 <run_test_command> 为项目实际测试命令 ===
+  # 示例：npm test / cargo test / pytest / go test ./...
+  # 重要：必须是可执行命令，不能是注释（否则 $? 会捕获 pushd 而非测试结果）
+  <run_test_command>
   TEST_EXIT=$?
   popd > /dev/null
 

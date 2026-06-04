@@ -40,7 +40,7 @@ MAIN_TREE_BEFORE=$(cd ../main && git ls-files -s | sort | shasum)
 # === Action ===
 SOURCE_BRANCH=$(git config --worktree superpowers.sourceBranch)
 SOURCE_WT=$(git worktree list --porcelain | \
-  awk -v src="refs/heads/$SOURCE_BRANCH" '/^worktree / { wt=$2 } /^branch / { if ($2 == src) print wt }')
+  awk -v src="refs/heads/$SOURCE_BRANCH" '/^worktree / { wt=$0; sub(/^worktree /, "", wt) } /^branch / { if ($2 == src) print wt }')
 
 pushd "$SOURCE_WT" > /dev/null
 git merge --no-ff task-1 -m "Merge"
