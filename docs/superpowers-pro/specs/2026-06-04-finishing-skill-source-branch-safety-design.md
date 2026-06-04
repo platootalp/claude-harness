@@ -74,7 +74,7 @@ git merge <feature-branch>
 
 | 文件 | 改动类型 |
 |------|---------|
-| `skills/using-git-worktrees/SKILL.md` | 新增 Step 2.5：写入源分支元数据 |
+| `skills/using-git-worktrees/SKILL.md` | 新增 Step 0.5（Confirm Source Branch）+ 修订 Step 1a/1b 用确认后的源分支 + 新增 Step 2.5（持久化元数据） |
 | `skills/finishing-a-development-branch/SKILL.md` | 重写 Step 3（Determine Source Branch）+ Step 4 auto 子流程；改造 interactive Option 2 去除 `gh` 硬依赖 |
 | `skills/finishing-a-development-branch/references/source-resolution.md` | 新增：源分支解析与 merge 路径决策详细规则 |
 | `skills/finishing-a-development-branch/references/pr-mr-creation.md` | 新增：PR/MR 创建的多平台通用方案（GitHub/GitLab） |
@@ -114,45 +114,131 @@ echo "$SOURCE_BRANCH" > "$(git rev-parse --git-path superpowers-source)"
 
 ### 4.3 using-git-worktrees 新增逻辑
 
-在现有 Step 1（Create Isolated Workspace）之后、Step 3（Project Setup）之前，新增 Step 2.5：
+**核心原则**：worktree 创建**前**必须明确源分支，**不**静默推断成主仓库 HEAD。原因：用户的主仓库 HEAD 可能停在分支 X（出于其他工作），但他想为分支 Y 创建 worktree。
+
+#### 4.3.1 新增 Step 0.5：Confirm Source Branch
+
+在 Step 0（detect existing isolation）之后、Step 1（Create Workspace）之前插入。
+
+**跳过场景**：Step 0 检测到"已在 worktree 内"时整个流程跳到 Step 3，本 Step 不执行。
+
+```bash
+# Step 0.5: Confirm Source Branch
+
+MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)
+MAIN_HEAD=$(git -C "$MAIN_ROOT" symbolic-ref --short HEAD 2>/dev/null)
+
+# 优先级 1: 调用方显式传入（命令参数 / skill 调用参数 / conversation 上下文已明确）
+if [ -n "${EXPLICIT_SOURCE_BRANCH:-}" ]; then
+  SOURCE_BRANCH="$EXPLICIT_SOURCE_BRANCH"
+  echo "Using explicit source branch: $SOURCE_BRANCH"
+else
+  # 优先级 2: 询问用户（候选 = 主仓库 HEAD + 最近活跃本地分支 + 远程 feature 分支）
+  echo "请选择 worktree 的源分支（按回车采用默认）："
+  echo "  [1] $MAIN_HEAD  (主仓库当前 HEAD - 默认)"
+
+  # 列出最近活跃的本地分支（排除已在 worktree 中 active 的）
+  ACTIVE_BRANCHES=$(git worktree list --porcelain | awk '/^branch / {print substr($2, 12)}')
+  LOCAL_BRANCHES=$(git for-each-ref --sort=-committerdate \
+    --format='%(refname:short)' refs/heads/ | head -10)
+  # 过滤 + 编号显示
+  i=2
+  for b in $LOCAL_BRANCHES; do
+    [ "$b" = "$MAIN_HEAD" ] && continue
+    echo "  [$i] $b"
+    i=$((i+1))
+  done
+
+  # 列出远程 feature 分支（排除已有本地副本的）
+  REMOTE_FEATURES=$(git for-each-ref --format='%(refname:short)' \
+    refs/remotes/origin/ | grep -v 'HEAD' | head -10)
+  for r in $REMOTE_FEATURES; do
+    LOCAL_NAME=${r#origin/}
+    git show-ref --quiet "refs/heads/$LOCAL_NAME" && continue
+    echo "  [$i] $r"
+    i=$((i+1))
+  done
+
+  echo "  [c] 自定义输入"
+  read -r CHOICE
+  # 解析 CHOICE：空 → MAIN_HEAD；数字 → 对应分支；c → 提示输入；其他 → 当作分支名
+  # (具体解析逻辑见 implementation plan)
+  SOURCE_BRANCH=$(resolve_choice "$CHOICE")  # 伪代码
+fi
+
+# 优先级 3: 拒绝 detached HEAD 或非法
+if [ -z "$SOURCE_BRANCH" ] || [ "$SOURCE_BRANCH" = "HEAD" ]; then
+  echo "ERROR: 无法在 detached HEAD 上创建 worktree。请明确指定源分支。"
+  exit 1
+fi
+
+# 校验源分支可解析（本地或远程都行）
+if ! git rev-parse --verify "$SOURCE_BRANCH" >/dev/null 2>&1; then
+  echo "ERROR: 源分支 '$SOURCE_BRANCH' 不存在。"
+  exit 1
+fi
+
+echo "Source branch confirmed: $SOURCE_BRANCH"
+```
+
+#### 4.3.2 Step 1 适配源分支（替换原 1a/1b 行为）
+
+Step 1 创建 worktree 时**必须使用 Step 0.5 确认的 `SOURCE_BRANCH` 作为 base**，不再依赖主仓库 HEAD。
+
+```markdown
+### Step 1a (修订): Native Worktree Tools
+
+native tool（如 `EnterWorktree`）通常只支持有限的 base ref 模式（`fresh` = origin/<default>，`head` = 主仓库 HEAD）。决策：
+
+- **如果 `SOURCE_BRANCH == MAIN_HEAD`**：直接用 native tool（head 模式）
+- **如果 `SOURCE_BRANCH == origin/<default-branch>`** 且 native tool 支持 fresh：用 native tool（fresh 模式）
+- **否则**：fallback 到 Step 1b（git worktree add 可指定任意 base）
+
+### Step 1b (修订): Git Worktree Fallback
+
+```bash
+git worktree add -b "$NEW_BRANCH_NAME" "$path" "$SOURCE_BRANCH"
+cd "$path"
+```
+
+显式传 `$SOURCE_BRANCH` 作为 third positional argument，强制基于该分支创建（不依赖主仓库 HEAD）。
+```
+
+#### 4.3.3 Step 2.5 简化：直接写入 Step 0.5 确认的元数据
+
+由于 Step 0.5 已经决定了 SOURCE_BRANCH，Step 2.5 只负责持久化：
 
 ```markdown
 ### Step 2.5: Record Source Branch Metadata
 
-记录 worktree 的"源分支"，供 finishing-a-development-branch 使用。
+把 Step 0.5 确认的 `SOURCE_BRANCH` 写入 worktree-local config，供 finishing-a-development-branch 使用。
 
 ```bash
-# SOURCE_BRANCH 获取顺序：
-# 1. 调用方显式参数（如 skill 调用 source-branch=feature-A）
-# 2. worktree 创建时 git checkout -b 的 base（通常是主仓库当时的 HEAD）
-# 3. detached HEAD → 询问用户
-
-SOURCE_BRANCH="${SOURCE_BRANCH:-$(git -C "$MAIN_ROOT" symbolic-ref --short HEAD 2>/dev/null)}"
-
-if [ -z "$SOURCE_BRANCH" ] || [ "$SOURCE_BRANCH" = "HEAD" ]; then
-  # detached HEAD or unclear, ask user
-  echo "Cannot determine source branch automatically. Please specify."
-  exit 1
-fi
-
-# 写入 worktree-local config
+# 启用 per-worktree config 扩展（幂等；写一次仓库级 config）
 GIT_VERSION_MAJOR=$(git --version | awk '{print $3}' | cut -d. -f1)
 GIT_VERSION_MINOR=$(git --version | awk '{print $3}' | cut -d. -f2)
 
 if [ "$GIT_VERSION_MAJOR" -gt 2 ] || \
    ([ "$GIT_VERSION_MAJOR" -eq 2 ] && [ "$GIT_VERSION_MINOR" -ge 20 ]); then
-  # 启用 per-worktree config 扩展（幂等）
   git config extensions.worktreeConfig true
   git config --worktree superpowers.sourceBranch "$SOURCE_BRANCH"
   git config --worktree superpowers.sourceCommit "$(git rev-parse "$SOURCE_BRANCH")"
 else
-  # Fallback for old git
+  # Fallback for git < 2.20
   echo "$SOURCE_BRANCH" > "$(git rev-parse --git-path superpowers-source)"
   git rev-parse "$SOURCE_BRANCH" > "$(git rev-parse --git-path superpowers-source-commit)"
 fi
 ```
 
-**对已存在的 worktree（Step 0 检测到已在 worktree 内）**：跳过元数据写入（保持现状），由 finishing-a-development-branch 的 fallback 处理。
+**注意**：必须先启用 `extensions.worktreeConfig=true`，否则 `--worktree` 写入会落到共享 config，破坏元数据隔离。
+```
+
+#### 4.3.4 跳过场景统一
+
+如果 Step 0 检测到"已在 worktree 内"（externally managed 或先前创建）：
+- 跳过 Step 0.5（不重新询问）
+- 跳过 Step 2.5（保留现有元数据）
+- 由 finishing-a-development-branch 的 fallback 处理无元数据情况
 
 ### 4.4 finishing-a-development-branch 重写
 
@@ -475,6 +561,8 @@ fi
 11. **GitHub PR 路径**：origin 指向 `github.com/owner/repo.git` → 输出 `https://github.com/owner/repo/compare/<branch>?expand=1`
 12. **GitLab MR 路径**：origin 指向 `gitlab.com/group/repo.git` → 输出 `https://gitlab.com/group/repo/-/merge_requests/new?merge_request[source_branch]=<branch>`
 13. **未识别平台**：origin 指向 `bitbucket.org/...` 或自托管私域 → 提示用户手动创建 + 显示原始 URL，不阻塞
+14. **主仓库 HEAD ≠ 期望源分支**：主仓库 checkout 在 feature-A；用户在 Step 0.5 选择 feature-B 作为源 → worktree 创建后 HEAD 在 feature-B；主仓库仍是 feature-A（验证 A10 + A2）
+15. **显式源分支参数**：调用方传入 `EXPLICIT_SOURCE_BRANCH=feature-B` → Step 0.5 直接使用，不弹菜单
 
 ### 7.2 集成测试
 
@@ -503,7 +591,8 @@ rm -rf "$TMP"
 
 | Phase | 内容 | 影响 |
 |-------|------|------|
-| Phase 1 | `using-git-worktrees` 新增 Step 2.5 | 向前兼容（老 worktree 不受影响） |
+| Phase 1a | `using-git-worktrees` 新增 Step 0.5（Confirm Source Branch）+ 修订 Step 1a/1b 用确认源分支 | UX 增强（显式确认，不再静默推断） |
+| Phase 1b | `using-git-worktrees` 新增 Step 2.5（持久化元数据，含 git 版本 fallback） | 向前兼容（老 worktree 不受影响） |
 | Phase 2 | `finishing-a-development-branch` Step 3 改读元数据 + fallback | 向前兼容（fallback 处理老 worktree） |
 | Phase 3 | `finishing-a-development-branch` Step 4 auto 子流程重写 | 核心改动 |
 | Phase 4 | `references/source-resolution.md` 详细规则文档 | 新增文档 |
@@ -524,6 +613,7 @@ rm -rf "$TMP"
 - **不**自动 pull source branch（保持显式：push 失败时让用户处理）
 - **不**实现 PR/MR title/body 自动生成（用户在 Web UI 中填，跨平台一致）
 - **不**集成 `gh` / `glab` CLI（仅 push + URL，零外部依赖；4.6.4 留出未来扩展位）
+- **不**为 `/feat`、`/fix`、`/refactor` 命令新增 `--source` 命令行参数（保持命令签名简洁；源分支通过 conversation 上下文或 skill 内询问处理）
 
 ---
 
@@ -552,9 +642,11 @@ rm -rf "$TMP"
 | A4 | 老 worktree（无元数据）finish 时有 fallback 提示 | 测试场景 5 |
 | A5 | /init 工作流 finish 不报错 | 测试场景 6 |
 | A6 | git < 2.20 仓库 finish 正常工作（走文件 fallback） | 测试场景 10 |
-| A7 | origin 为 GitHub 仓库时，PR 路径输出正确的 `/compare/<branch>?expand=1` URL | 新增测试场景 11 |
-| A8 | origin 为 GitLab 仓库时，MR 路径输出正确的 `/-/merge_requests/new?merge_request[source_branch]=<branch>` URL | 新增测试场景 12 |
-| A9 | origin 为未识别平台时，提示用户手动创建并显示原始 URL，不阻塞 push | 新增测试场景 13 |
+| A7 | origin 为 GitHub 仓库时，PR 路径输出正确的 `/compare/<branch>?expand=1` URL | 测试场景 11 |
+| A8 | origin 为 GitLab 仓库时，MR 路径输出正确的 `/-/merge_requests/new?merge_request[source_branch]=<branch>` URL | 测试场景 12 |
+| A9 | origin 为未识别平台时，提示用户手动创建并显示原始 URL，不阻塞 push | 测试场景 13 |
+| A10 | 主仓库 checkout 在 X，用户在 Step 0.5 选择 Y 作为源 → worktree 在 Y 上创建，元数据 = Y；主仓库不变 | 测试场景 14 |
+| A11 | 调用方显式传 `EXPLICIT_SOURCE_BRANCH=feature-B` → Step 0.5 不弹菜单，直接用 feature-B | 测试场景 15 |
 
 ---
 

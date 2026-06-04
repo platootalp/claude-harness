@@ -29,7 +29,7 @@ effort: high
   Step 5/8  IMPLEMENT     □  TDD + 双重审查逐 task 执行
   Step 6/8  REVIEW        □  整体代码审查
   Step 7/8  VERIFY        □  验证门控 + 回归测试
-  Step 8/8  FINISH        □  合并到初始分支 + 推送 + 清理
+  Step 8/8  FINISH        □  合并到源分支 + 推送 + 清理
 
 ---
 
@@ -110,5 +110,5 @@ effort: high
 
 调用 `superpowers-pro:finishing-a-development-branch` skill（finish-mode: auto）。
 
-检查点: `━━━ [✓] Step 8/8: FINISH — 已合并到 <初始分支> 并推送`
+检查点: `━━━ [✓] Step 8/8: FINISH — 已合并到 <源分支> 并推送`
 产出物: 合并结果 + 推送结果 + 清理结果
