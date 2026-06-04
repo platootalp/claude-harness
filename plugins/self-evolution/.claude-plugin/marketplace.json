@@ -1,0 +1,18 @@
+{
+  "name": "self-evolution-marketplace",
+  "owner": {
+    "name": "platootalp"
+  },
+  "metadata": {
+    "description": "Marketplace hosting the self-evolution plugin"
+  },
+  "plugins": [
+    {
+      "name": "self-evolution",
+      "source": "./",
+      "description": "Auto-curate skills from your conversations",
+      "category": "workflow",
+      "keywords": ["skills", "automation", "self-evolution"]
+    }
+  ]
+}

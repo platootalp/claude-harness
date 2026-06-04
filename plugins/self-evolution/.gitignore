@@ -1,0 +1,6 @@
+tests/tmp/
+*.swp
+.DS_Store
+node_modules/
+.worktrees/
+dist-packages/
