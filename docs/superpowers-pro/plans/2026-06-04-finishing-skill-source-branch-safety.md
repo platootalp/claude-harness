@@ -36,111 +36,222 @@
 
 ---
 
-## Task 1: using-git-worktrees Step 2.5 — 写入源分支元数据
+## Task 1: using-git-worktrees Step 0.5 + Step 1 修订 + Step 2.5
 
 **Files:**
 - Modify: `plugins/superpowers-pro/skills/using-git-worktrees/SKILL.md`
 
-**目标:** 在现有 Step 1（Create Isolated Workspace）和 Step 3（Project Setup）之间插入 Step 2.5，写入源分支元数据；同步更新 Quick Reference。
+**目标:** 在 worktree **创建前**显式确认源分支（不再静默推断主仓库 HEAD），然后创建 worktree 时用确认后的源分支作 base，最后持久化源分支到 per-worktree config。覆盖 spec 章节 4.3.1 / 4.3.2 / 4.3.3。
 
-- [ ] **Step 1: 在 SKILL.md Step 1b 末尾后、Step 3 前插入 Step 2.5**
+**核心改动**：
+1. 新增 **Step 0.5: Confirm Source Branch**（在 Step 0 之后、Step 1 之前）
+2. 修订 **Step 1a/1b**：使用 Step 0.5 确认的 `SOURCE_BRANCH` 作为 base
+3. 新增 **Step 2.5: Record Source Branch Metadata**（在 Step 1 之后、Step 3 之前）
+4. 更新 Quick Reference / Common Mistakes / Red Flags
 
-打开 `plugins/superpowers-pro/skills/using-git-worktrees/SKILL.md`，在 "## Step 3: Project Setup" 行之前插入：
+- [ ] **Step 1: 在 SKILL.md 中定位插入点**
 
-```markdown
-## Step 2.5: Record Source Branch Metadata
+Run:
+```bash
+grep -n "^## Step 0:\|^## Step 1:\|^## Step 3:" plugins/superpowers-pro/skills/using-git-worktrees/SKILL.md
+```
+Expected: 三行行号，定位 Step 0 / 1 / 3 边界。
 
-记录 worktree 的"源分支"，供 `finishing-a-development-branch` skill 在 finish 时使用，避免依赖主仓库 HEAD。
+- [ ] **Step 2: 在 "## Step 1: Create Isolated Workspace" 之前插入 Step 0.5**
 
-**仅在新建 worktree 时执行**（Step 0 检测到"已在 worktree 内"时跳过）。
+新增章节（关键内容；完整 bash 见 spec 4.3.1）：
+
+````
+## Step 0.5: Confirm Source Branch
+
+**核心原则**：worktree 创建**前**必须明确源分支，**不**静默推断成主仓库 HEAD。原因：用户的主仓库 HEAD 可能停在分支 X（出于其他工作），但他想为分支 Y 创建 worktree。
+
+**跳过场景**：Step 0 检测到"已在 worktree 内"时跳到 Step 3，本步不执行。
+
+优先级:
+1. 调用方显式传入 `EXPLICIT_SOURCE_BRANCH` (如 skill 调用参数 / conversation 已明确)
+2. 弹菜单询问用户 (默认 = 主仓库 HEAD)
+3. detached HEAD 或非法值 → 报错退出
+
+bash 实现:
 
 ```bash
-# SOURCE_BRANCH 获取顺序：
-# 1. 调用方显式参数（如 skill 调用 source-branch=feature-A）
-# 2. worktree 创建时 git checkout -b 的 base（通常是主仓库当时的 HEAD symbolic ref）
-# 3. detached HEAD → 询问用户
-
 MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)
-SOURCE_BRANCH="${SOURCE_BRANCH:-$(git -C "$MAIN_ROOT" symbolic-ref --short HEAD 2>/dev/null)}"
+MAIN_HEAD=$(git -C "$MAIN_ROOT" symbolic-ref --short HEAD 2>/dev/null)
 
-if [ -z "$SOURCE_BRANCH" ] || [ "$SOURCE_BRANCH" = "HEAD" ]; then
-  echo "Cannot determine source branch automatically (detached HEAD or unclear)."
-  echo "Please specify the source branch name:"
-  read SOURCE_BRANCH
+if [ -n "${EXPLICIT_SOURCE_BRANCH:-}" ]; then
+  SOURCE_BRANCH="$EXPLICIT_SOURCE_BRANCH"
+  echo "Using explicit source branch: $SOURCE_BRANCH"
+else
+  echo "请选择 worktree 的源分支（按回车采用默认）："
+  echo "  [1] $MAIN_HEAD  (主仓库当前 HEAD - 默认)"
+
+  i=2
+  CANDIDATES=("$MAIN_HEAD")
+  LOCAL_BRANCHES=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/ | head -10)
+  for b in $LOCAL_BRANCHES; do
+    [ "$b" = "$MAIN_HEAD" ] && continue
+    echo "  [$i] $b"
+    CANDIDATES+=("$b")
+    i=$((i+1))
+  done
+
+  REMOTE_FEATURES=$(git for-each-ref --format='%(refname:short)' refs/remotes/origin/ 2>/dev/null | grep -v 'HEAD' | head -10)
+  for r in $REMOTE_FEATURES; do
+    LOCAL_NAME=${r#origin/}
+    git show-ref --quiet "refs/heads/$LOCAL_NAME" && continue
+    echo "  [$i] $r"
+    CANDIDATES+=("$r")
+    i=$((i+1))
+  done
+
+  echo "  [c] 自定义输入分支名"
+  read -r CHOICE
+
+  case "$CHOICE" in
+    "") SOURCE_BRANCH="$MAIN_HEAD" ;;
+    [0-9]*) IDX=$((CHOICE-1)); SOURCE_BRANCH="${CANDIDATES[$IDX]:-}" ;;
+    c|C) echo "请输入源分支名："; read -r SOURCE_BRANCH ;;
+    *) SOURCE_BRANCH="$CHOICE" ;;
+  esac
 fi
 
-# 写入 worktree-local config
+if [ -z "$SOURCE_BRANCH" ] || [ "$SOURCE_BRANCH" = "HEAD" ]; then
+  echo "ERROR: 无法在 detached HEAD 上创建 worktree。请明确指定源分支。"
+  exit 1
+fi
+
+if ! git rev-parse --verify "$SOURCE_BRANCH" >/dev/null 2>&1; then
+  echo "ERROR: 源分支 '$SOURCE_BRANCH' 不存在。"
+  exit 1
+fi
+
+echo "Source branch confirmed: $SOURCE_BRANCH"
+```
+
+**为什么必须显式确认**：以前的设计静默用主仓库 HEAD。但实际工作中主仓库可能停在 feature-A（保留其他工作的状态），而你想为 feature-B 开始多 worktree 任务——若不显式确认，会错误地基于 feature-A 创建 worktree。
+````
+
+- [ ] **Step 3: 在 "## Step 1: Create Isolated Workspace" 章节开头插入总则**
+
+在该章节标题之后、子章节 "### 1a." 之前插入：
+
+```
+**所有创建路径必须使用 Step 0.5 确认的 `SOURCE_BRANCH` 作为 base**，不再依赖主仓库 HEAD。
+```
+
+- [ ] **Step 4: 修订 Step 1a 段落，新增 base ref 决策说明**
+
+在 Step 1a 现有内容末尾追加：
+
+```
+**Native tool base ref 限制处理**：native tool（如 `EnterWorktree`）通常只支持有限的 base ref 模式（`fresh` = origin/<default-branch>，`head` = 主仓库 HEAD）。决策：
+
+- 如果 `SOURCE_BRANCH == MAIN_HEAD` → 直接用 native tool（head 模式）
+- 如果 `SOURCE_BRANCH == origin/<default-branch>` 且 native tool 支持 fresh → 用 native tool（fresh 模式）
+- 否则 → fallback 到 Step 1b（git worktree add 可显式指定任意 base）
+
+注意：默认 native tool 行为可能不匹配 `SOURCE_BRANCH`。如果创建后发现 worktree HEAD 不是预期，应立即 `git reset --hard "$SOURCE_BRANCH"` 同步（或重新走 Step 1b）。
+```
+
+- [ ] **Step 5: 修订 Step 1b 的 "Create the Worktree" 子段**
+
+把现有的 `git worktree add "$path" -b "$BRANCH_NAME"` 命令替换为：
+
+```
+git worktree add -b "$BRANCH_NAME" "$path" "$SOURCE_BRANCH"
+cd "$path"
+```
+
+注释说明：第三个位置参数显式指定 `$SOURCE_BRANCH` 作为 base，强制基于该分支创建（不依赖主仓库 HEAD）。
+
+- [ ] **Step 6: 在 "## Step 3: Project Setup" 之前插入 Step 2.5**
+
+````
+## Step 2.5: Record Source Branch Metadata
+
+把 Step 0.5 确认的 `SOURCE_BRANCH` 写入 worktree-local config，供 `finishing-a-development-branch` skill 在 finish 时使用。
+
+**跳过场景**：Step 0 检测到"已在 worktree 内"时跳过本步（保留现有元数据；老 worktree 由 finish 端 fallback 处理）。
+
+```bash
 GIT_VERSION_MAJOR=$(git --version | awk '{print $3}' | cut -d. -f1)
 GIT_VERSION_MINOR=$(git --version | awk '{print $3}' | cut -d. -f2)
 
 if [ "$GIT_VERSION_MAJOR" -gt 2 ] || \
    ([ "$GIT_VERSION_MAJOR" -eq 2 ] && [ "$GIT_VERSION_MINOR" -ge 20 ]); then
-  # 启用 per-worktree config 扩展（幂等；写一次仓库级 config）
   git config extensions.worktreeConfig true
   git config --worktree superpowers.sourceBranch "$SOURCE_BRANCH"
   git config --worktree superpowers.sourceCommit "$(git rev-parse "$SOURCE_BRANCH")"
 else
-  # Fallback for git < 2.20
   echo "$SOURCE_BRANCH" > "$(git rev-parse --git-path superpowers-source)"
   git rev-parse "$SOURCE_BRANCH" > "$(git rev-parse --git-path superpowers-source-commit)"
 fi
 ```
 
 **为什么必须先启用 `extensions.worktreeConfig=true`**：默认情况下 git 把所有 worktree 的 config 当作共享 config。启用扩展后 `--worktree` 写入才会真正落到 per-worktree 的 `config.worktree` 文件，实现元数据隔离。
+````
 
-**Skip 场景**：如果 Step 0 检测到"已在 worktree 内"，跳过本步（保留现有元数据；老 worktree 由 finish 端 fallback 处理）。
+- [ ] **Step 7: 更新 Quick Reference 表（在末尾新增 3 行）**
+
+在 `## Quick Reference` 表的最后一行之后新增：
 
 ```
-
-- [ ] **Step 2: 更新 Quick Reference 表（在现有表末尾新增 2 行）**
-
-定位到 `## Quick Reference` 章节，在最后一行 "No package.json/Cargo.toml" 之后新增：
-
-```markdown
-| New worktree created | Record source branch metadata (Step 2.5) |
-| git < 2.20 | Fallback to file in `.git/worktrees/<name>/superpowers-source` |
+| New worktree created | Confirm source branch (Step 0.5) -> use as base (Step 1) -> record metadata (Step 2.5) |
+| EXPLICIT_SOURCE_BRANCH set | Skip menu, use directly (Step 0.5 priority 1) |
+| git < 2.20 | Fallback to file in .git/worktrees/<name>/superpowers-source |
 ```
 
-- [ ] **Step 3: 更新 Common Mistakes 章节，新增 1 项**
+- [ ] **Step 8: 在 Common Mistakes 末尾新增 2 项**
 
-在 `## Common Mistakes` 末尾新增：
+```
+### Silently using main repo HEAD as source
 
-```markdown
+- **Problem:** main repo HEAD may be on branch X while user wants worktree for branch Y; silent inference leads to wrong source
+- **Fix:** Step 0.5 explicitly confirms source branch (menu) before creating worktree
+
 ### Forgetting to record source branch
 
 - **Problem:** finish-a-development-branch falls back to inference and may merge to the wrong branch
 - **Fix:** Step 2.5 records source branch metadata when worktree is newly created
 ```
 
-- [ ] **Step 4: 更新 Red Flags 章节**
+- [ ] **Step 9: 更新 Red Flags 章节**
 
-定位到 `## Red Flags` → `**Never:**` 列表末尾新增：
+在 `**Never:**` 列表末尾追加：
 
-```markdown
+```
+- Skip Step 0.5 confirmation (causes silent reliance on main repo HEAD)
 - Skip Step 2.5 for newly created worktrees (causes finish to merge to wrong branch)
+- Use `git worktree add` without explicit source branch argument (Step 1b must pass `$SOURCE_BRANCH`)
 ```
 
-并在 `**Always:**` 列表末尾新增：
+在 `**Always:**` 列表末尾追加：
 
-```markdown
+```
+- Confirm source branch before creating worktree (Step 0.5)
+- Pass `$SOURCE_BRANCH` as explicit base when calling `git worktree add` (Step 1b)
 - Record source branch metadata when creating a new worktree (Step 2.5)
 ```
 
-- [ ] **Step 5: 自查 — grep 验证关键词存在**
+- [ ] **Step 10: 自查 — grep 验证**
 
 Run:
 ```bash
-grep -c "Step 2.5" plugins/superpowers-pro/skills/using-git-worktrees/SKILL.md
+grep -c "Step 0.5\|Confirm Source Branch" plugins/superpowers-pro/skills/using-git-worktrees/SKILL.md
+grep -c "Step 2.5\|Record Source Branch" plugins/superpowers-pro/skills/using-git-worktrees/SKILL.md
+grep -c "EXPLICIT_SOURCE_BRANCH" plugins/superpowers-pro/skills/using-git-worktrees/SKILL.md
 grep -c "superpowers.sourceBranch" plugins/superpowers-pro/skills/using-git-worktrees/SKILL.md
 grep -c "extensions.worktreeConfig" plugins/superpowers-pro/skills/using-git-worktrees/SKILL.md
+grep -c 'git worktree add -b "\$BRANCH_NAME" "\$path" "\$SOURCE_BRANCH"' plugins/superpowers-pro/skills/using-git-worktrees/SKILL.md
 ```
-Expected: 每行 >= 2（出现在多处：标题 + 引用 + Quick Ref）
+Expected: 每行 >= 1，前 2 行 >= 2（标题 + 引用 + Quick Ref 多处出现）
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
 git add plugins/superpowers-pro/skills/using-git-worktrees/SKILL.md
-git commit -m "feat(using-git-worktrees): record source branch metadata in worktree config"
+git commit -m "feat(using-git-worktrees): add Step 0.5 (confirm source) + Step 2.5 (record metadata)"
 ```
 
 ---
@@ -921,6 +1032,26 @@ Create `plugins/superpowers-pro/skills/finishing-a-development-branch/references
 - 输出包含 "non-GitHub/GitLab remote. Please create PR/MR manually."
 - 输出原始 Remote URL
 - 不阻塞 push（push 已成功）
+
+## 场景 14：主仓库 HEAD ≠ 期望源分支（验收 A10）
+
+**Setup**：主仓库 checkout 在 feature-A；用户启动 `using-git-worktrees` skill
+
+**Action**：在 Step 0.5 菜单中选择 feature-B（非主仓库 HEAD）
+
+**Expected**：
+- worktree 创建后 HEAD 在 feature-B 上（基于 feature-B）
+- `git config --worktree superpowers.sourceBranch` 返回 `feature-B`
+- 主仓库 HEAD 仍是 feature-A（未改变）
+
+## 场景 15：显式源分支参数（验收 A11）
+
+**Setup**：调用方设置 `EXPLICIT_SOURCE_BRANCH=feature-B` 后调用 skill
+
+**Expected**：
+- Step 0.5 不弹菜单，直接使用 feature-B
+- 输出包含 "Using explicit source branch: feature-B"
+- worktree 基于 feature-B 创建
 ````
 
 - [ ] **Step 2: 自查**
@@ -929,7 +1060,7 @@ Run:
 ```bash
 grep -c "^## 场景" plugins/superpowers-pro/skills/finishing-a-development-branch/references/test-scenarios.md
 ```
-Expected: == 13
+Expected: == 15
 
 - [ ] **Step 3: Commit**
 
@@ -1466,25 +1597,30 @@ git commit -m "chore(superpowers-pro): bump to 0.12.0 with source-branch-safe fi
 
 | Spec 章节 | Task 覆盖 |
 |----------|----------|
-| 4.3 using-git-worktrees Step 2.5 | Task 1 ✓ |
+| 4.3.1 using-git-worktrees Step 0.5 (Confirm Source Branch) | Task 1 Step 2 ✓ |
+| 4.3.2 Step 1a/1b 修订（用 SOURCE_BRANCH 作 base） | Task 1 Step 3-5 ✓ |
+| 4.3.3 using-git-worktrees Step 2.5 (Record Metadata) | Task 1 Step 6 ✓ |
+| 4.3.4 跳过场景统一 | Task 1 Step 2 + Step 6 中明确"跳过场景" ✓ |
 | 4.4 finishing Step 3 重写 | Task 2 ✓ |
 | 4.4 finishing Step 4 auto 重写 | Task 3 + Task 4 ✓ |
 | 4.4.1 测试与回滚位置矩阵 | Task 4 step 1 实现 + Task 5 文档化 ✓ |
 | 4.5 /init 工作流 | Task 3 Step 2 中 "B. /init 工作流" 路径 ✓ |
 | 4.6 PR/MR 多平台方案 | Task 6 + Task 7 ✓ |
-| 7.1 测试场景 1-13 | Task 8（全部 13 个）+ Task 9（6 个 eval 脚本覆盖关键的 A1/A2/A4/A7/A8/A9）✓ |
-| 8. 实施清单 Phase 1-7 | Task 1-10 完整覆盖 ✓ |
-| 11. 验收标准 A1-A9 | evals 覆盖 A1/A2/A4/A7/A8/A9（核心 6 项）；A3/A5/A6/A8 由 test-scenarios.md 手动验证清单覆盖 |
+| 7.1 测试场景 1-15 | Task 8（全部 15 个）+ Task 9（6 个 eval 脚本覆盖关键 A1/A2/A4/A7/A8/A9）✓ |
+| 8. 实施清单 Phase 1a/1b/2-7 | Task 1-10 完整覆盖（Phase 1a/1b 合并为 Task 1） ✓ |
+| 11. 验收标准 A1-A11 | evals 覆盖 A1/A2/A4/A7/A8/A9（核心 6 项）；A3/A5/A6/A10/A11 由 test-scenarios.md 手动验证清单覆盖 |
 
 **2. Placeholder 扫描**：未发现 "TBD"/"TODO"/"implement later"。所有 bash 代码块包含完整可运行内容。
 
 **3. 类型/命名一致性**：
 - `superpowers.sourceBranch` 和 `superpowers.sourceCommit` 在 Task 1/2/5 中一致
-- `SOURCE_BRANCH` / `SOURCE_WT` / `WT_BRANCH` / `WT_PATH` / `RUN_DIR` / `TMP_WT` 在 Task 3/4/5 中一致
+- `SOURCE_BRANCH` / `EXPLICIT_SOURCE_BRANCH` / `MAIN_HEAD` / `MAIN_ROOT` / `CANDIDATES` 在 Task 1 各 step 中一致
+- `SOURCE_WT` / `WT_BRANCH` / `WT_PATH` / `RUN_DIR` / `TMP_WT` 在 Task 3/4/5 中一致
 - 文件路径 `references/source-resolution.md` / `references/pr-mr-creation.md` / `references/test-scenarios.md` / `evals/*.sh` 在 File Structure / 各 task / Self-Review 中一致
 
 **4. 已知 gap**：
-- 验收 A3（多 worktree 串行冲突）/ A5（/init 路径）/ A6（git < 2.20）由 test-scenarios.md 描述 + 手动执行覆盖，未自动化 eval 脚本。理由：A3 需要交互冲突解决，A6 需要 git 版本切换环境，自动化收益低 ROI 低。
+- 验收 A3（多 worktree 串行冲突）/ A5（/init 路径）/ A6（git < 2.20）/ A10（主仓库 HEAD ≠ 源）/ A11（显式参数）由 test-scenarios.md 描述 + 手动执行覆盖，未自动化 eval 脚本。
+- 理由：A3 需要交互冲突解决；A6 需要 git 版本切换环境；A10/A11 需要 stdin 交互模拟；A5 涉及 push 到远程，ROI 低 → 优先级低。
 - evals 脚本是"独立 sandbox 验证 git plumbing 行为"，不直接执行 SKILL.md。SKILL.md 改动的端到端验证仍需手动按 test-scenarios.md 走一遍。
 
 ---
