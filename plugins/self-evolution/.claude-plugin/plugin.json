@@ -1,0 +1,17 @@
+{
+  "name": "self-evolution",
+  "version": "0.12.0",
+  "description": "Auto-curate ~/.claude/skills/ from your conversations via companion-mode background review, hard-gated security and meta-skill driven content generation.",
+  "author": {
+    "name": "platootalp"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/platootalp/claude-self-evolution",
+  "repository": "https://github.com/platootalp/claude-self-evolution",
+  "keywords": ["skills", "self-improving", "memory", "automation", "companion-mode"],
+  "components": ["agents", "commands", "hooks", "skills"],
+  "agentsPath": "agents",
+  "commandsPath": "commands",
+  "hooksPath": "hooks/hooks.json",
+  "skillsPath": "skills"
+}

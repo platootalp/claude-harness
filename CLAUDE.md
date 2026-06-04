@@ -32,12 +32,13 @@ docs/                              # Internal specs and plans (not shipped)
 
 ## Marketplace Registry
 
-`marketplace.json` 注册 2 个活跃插件：
+`marketplace.json` 注册 3 个活跃插件：
 
 | Plugin | marketplace.json source | 状态 |
 |--------|------------------------|------|
 | **superpowers-pro** | `./plugins/superpowers-pro` | 活跃 |
 | **kb** | `./plugins/kb` | 活跃 |
+| **self-evolution** | `./plugins/self-evolution` | 活跃 |
 
 旧插件（analysis, coding, office, interview, wiki）已移至 `other/` 保留源码，但未在 marketplace 注册。修改 marketplace.json 或移动插件目录时，必须保持两者一致。
 
@@ -70,6 +71,43 @@ The `session-start` hook automatically injects `using-superpowers` SKILL.md cont
 | Entry | /kb 命令（6 步检查点编排，并行派发子代理） | extract-agent, transform-agent |
 
 站点：`plugins/kb/site/`（Astro 6 + React 18 + d3-force + Fuse.js），三视图（Raw/Wiki/Graph）+ 搜索 + 知识图谱。
+
+## Active Plugin: self-evolution
+
+`plugins/self-evolution/` — 自动从对话中提取可复用工作流并生成 skill 的插件 v0.12.0。Companion-mode 后台审查 + 安全门控 + 元技能驱动内容生成。
+
+### 构建和测试
+
+```bash
+cd plugins/self-evolution
+npm install        # 安装依赖
+npm run build      # esbuild bundle → dist/runtime.mjs
+npm test           # vitest run (所有测试)
+```
+
+### 组件清单
+
+| 类型 | 数量 | 路径 |
+|------|------|------|
+| Skills | 1 | `skills/evolve-skill-writer/` |
+| Agents | 2 | `agents/skill-reviewer.md`, `agents/config-agent.md` |
+| Commands | 4 | `commands/evolve-review.md`, `evolve-config.md`, `evolve-status.md`, `evolve-delete-skill.md` |
+| Hooks | 3 | `hooks/hooks.json` (Claude Code), `hooks/hooks.codex.json`, `hooks/hooks.cursor.json` |
+| Prompts | 4 | `prompts/review-prompt.md`, `review-prompt-skill.md`, `review-prompt-update.md`, `review-prompt-combined.md` |
+
+### 架构
+
+TypeScript 运行时（`src/` → `dist/runtime.mjs`）处理 12 个命令，hooks 通过 `node "${CLAUDE_PLUGIN_ROOT}/dist/runtime.mjs" <command>` 调用。Companion-mode：Stop hook 触发后台 `claude -p` 进程执行 skill-reviewer pipeline。
+
+### 数据位置
+
+- Plugin data: `~/.claude/plugins/data/self-evolution-self-evolution-marketplace/`
+- Sessions: `~/.claude/plugins/data/.../sessions/`
+- Stats: `~/.claude/plugins/data/.../stats.json`
+
+### 版本管理
+
+self-evolution 保持独立版本号，更新时修改 `plugins/self-evolution/.claude-plugin/plugin.json` 中的 `version` 并在 `CHANGELOG.md` 记录。
 
 ## Inactive Plugins (other/)
 
