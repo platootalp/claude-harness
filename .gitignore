@@ -1,1 +1,3 @@
 .test
+# self-evolution plugin dependencies
+plugins/self-evolution/node_modules/
