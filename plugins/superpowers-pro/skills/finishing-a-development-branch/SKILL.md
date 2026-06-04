@@ -29,13 +29,13 @@ digraph finish {
     rankdir=TB;
     "1. Verify tests" [shape=box];
     "2. Detect environment" [shape=box];
-    "3. Determine base branch" [shape=box];
+    "3. Determine source branch" [shape=box];
     "4. Execute finish" [shape=box];
     "5. Cleanup workspace" [shape=box];
 
     "1. Verify tests" -> "2. Detect environment";
-    "2. Detect environment" -> "3. Determine base branch";
-    "3. Determine base branch" -> "4. Execute finish";
+    "2. Detect environment" -> "3. Determine source branch";
+    "3. Determine source branch" -> "4. Execute finish";
     "4. Execute finish" -> "5. Cleanup workspace";
 }
 ```
@@ -70,13 +70,37 @@ GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
 | `GIT_DIR != GIT_COMMON`, named branch | Worktree — provenance-based cleanup applies |
 | `GIT_DIR != GIT_COMMON`, detached HEAD | Externally managed — no merge, no cleanup |
 
-### Step 3: Determine Base Branch
+### Step 3: Determine Source Branch
+
+读取 worktree 元数据，决定合并目标。**不依赖主仓库 HEAD**。
 
 ```bash
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
+# 1. 优先读取 worktree-local config（git 2.20+）
+SOURCE=$(git config --worktree superpowers.sourceBranch 2>/dev/null)
+
+# 2. fallback 到文件
+if [ -z "$SOURCE" ]; then
+  SOURCE_FILE="$(git rev-parse --git-path superpowers-source)"
+  [ -f "$SOURCE_FILE" ] && SOURCE=$(cat "$SOURCE_FILE")
+fi
+
+# 3. 仍空 → 暂停询问用户（老 worktree / 手动 git worktree add）
+if [ -z "$SOURCE" ]; then
+  CANDIDATE=$(git merge-base HEAD main 2>/dev/null \
+              || git merge-base HEAD master 2>/dev/null \
+              || echo "未知")
+  echo "未找到此 worktree 的源分支元数据（可能是手动 git worktree add 创建）。"
+  echo "候选源分支推断：$CANDIDATE"
+  echo "请确认源分支名（或输入 'pr' 跳过本地 merge 走 PR/MR 路径）："
+  read SOURCE
+fi
 ```
 
-Or ask: "This branch split from main — is that correct?"
+**特殊值**：
+- `SOURCE = pr`：跳过 auto merge 子流程，转走 PR/MR 创建路径（见 `references/pr-mr-creation.md`）。
+- `SOURCE` 为空且非交互（无 stdin）：报错退出，提示用户手动 finish。
+
+详见 `references/source-resolution.md`。
 
 ### Step 4: Execute Finish
 
@@ -103,7 +127,7 @@ Present menu based on environment:
 ```
 Implementation complete. What would you like to do?
 
-1. Merge back to <base-branch> locally
+1. Merge back to <source-branch> locally
 2. Push and create a Pull Request
 3. Keep the branch as-is (I'll handle it later)
 4. Discard this work
@@ -129,7 +153,7 @@ Execute per option:
 ```bash
 MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)
 cd "$MAIN_ROOT"
-git checkout <base-branch>
+git checkout <source-branch>
 git pull
 git merge <feature-branch>
 <test command>
