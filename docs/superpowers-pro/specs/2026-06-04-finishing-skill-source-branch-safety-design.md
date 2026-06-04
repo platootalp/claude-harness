@@ -75,8 +75,9 @@ git merge <feature-branch>
 | 文件 | 改动类型 |
 |------|---------|
 | `skills/using-git-worktrees/SKILL.md` | 新增 Step 2.5：写入源分支元数据 |
-| `skills/finishing-a-development-branch/SKILL.md` | 重写 Step 3（Determine Source Branch）+ Step 4 auto 子流程 |
+| `skills/finishing-a-development-branch/SKILL.md` | 重写 Step 3（Determine Source Branch）+ Step 4 auto 子流程；改造 interactive Option 2 去除 `gh` 硬依赖 |
 | `skills/finishing-a-development-branch/references/source-resolution.md` | 新增：源分支解析与 merge 路径决策详细规则 |
+| `skills/finishing-a-development-branch/references/pr-mr-creation.md` | 新增：PR/MR 创建的多平台通用方案（GitHub/GitLab） |
 | `commands/feat.md`, `commands/fix.md`, `commands/refactor.md`, `commands/init.md` | 同步更新 Step 8 检查点描述（"合并到源分支"而非"初始分支"） |
 
 ### 4.2 元数据持久化机制
@@ -187,7 +188,7 @@ if [ -z "$SOURCE" ]; then
 fi
 ```
 
-**fallback 输入 `pr` 的处理**：当 SOURCE 为字面值 `pr` 时，Step 4 跳过 auto merge 子流程，转而执行 interactive Option 2 的逻辑（push 当前分支 + `gh pr create`），完成后保留 worktree（用户后续需迭代 PR）。
+**fallback 输入 `pr` 的处理**：当 SOURCE 为字面值 `pr` 时，Step 4 跳过 auto merge 子流程，转而执行"PR/MR 创建路径"（见 4.7）——push 当前分支到远端 + 输出 PR/MR 创建 URL，完成后保留 worktree（用户后续需迭代 PR/MR）。
 ```
 
 #### Step 4 重写：Execute Finish (auto mode)
@@ -321,6 +322,83 @@ merge 后是否要再跑测试 + 失败如何回滚，因 source 形态不同而
 - `using-git-worktrees`: SOURCE_BRANCH 为空 → 跳过元数据写入
 - `finishing-a-development-branch`: Step 3 检测无源分支 → Step 4 走"push only"路径（仅推送当前分支，不做 merge）
 
+### 4.6 PR/MR 创建路径的多平台通用方案
+
+**目标**：不硬依赖任何 platform CLI（`gh` / `glab` 等），同时支持 GitHub 和 GitLab。
+
+**方案**：仅做 `git push -u origin <branch>` + 计算并输出 PR/MR 创建 URL，由用户在浏览器中完成创建。
+
+#### 4.6.1 适用位置
+
+- Step 3 fallback：用户输入 `pr` 走此路径
+- interactive Option 2：用户选择"Push and create a PR/MR" → 走此路径（去 `gh pr create`）
+
+#### 4.6.2 实现伪代码
+
+```bash
+# 1. 推送分支
+git push -u origin "$BRANCH"
+
+# 2. 解析 origin URL 推导平台和创建链接
+REMOTE_URL=$(git remote get-url origin)
+
+# 规范化 URL（去 .git 后缀；ssh → https）
+WEB_URL=$(echo "$REMOTE_URL" | sed -E '
+  s#^git@([^:]+):#https://\1/#;
+  s#\.git$##;
+')
+
+# 3. 平台检测与 URL 拼接
+case "$WEB_URL" in
+  *github.com*|*github*)
+    CREATE_URL="${WEB_URL}/compare/${BRANCH}?expand=1"
+    PLATFORM="GitHub Pull Request"
+    ;;
+  *gitlab*)
+    CREATE_URL="${WEB_URL}/-/merge_requests/new?merge_request[source_branch]=${BRANCH}"
+    PLATFORM="GitLab Merge Request"
+    ;;
+  *)
+    CREATE_URL=""
+    PLATFORM="未知平台"
+    ;;
+esac
+
+# 4. 输出
+echo "Branch pushed: $BRANCH"
+if [ -n "$CREATE_URL" ]; then
+  echo "Create $PLATFORM at: $CREATE_URL"
+else
+  echo "Detected non-GitHub/GitLab remote. Please create PR/MR manually."
+  echo "Remote URL: $REMOTE_URL"
+fi
+```
+
+**注意**：GitLab 在 `git push` 服务端响应中也会主动输出 MR 创建链接（`remote: To create a merge request for ...`），用户可直接点击。我们的 URL 拼接是兜底，保证两种平台输出一致体验。
+
+#### 4.6.3 不依赖 CLI 的取舍
+
+| 维度 | 用 CLI（`gh` / `glab`） | 仅 push + URL（本方案） |
+|------|------------------------|------------------------|
+| PR/MR title/body 自动填 | 支持 | 不支持，用户在 Web 填 |
+| 平台覆盖 | 需各装一个 CLI | 全平台统一（仅需 git） |
+| 用户环境依赖 | gh/glab 安装 + 认证 | 仅 git remote 配置 |
+| 失败模式 | CLI 调用失败需排查 | push 失败即报错，定位简单 |
+
+**取舍**：用户在 Web UI 中填 title/body 是常见做法，不构成重大体验损失。换来的是跨平台一致性和零外部依赖。
+
+#### 4.6.4 何时退回到 CLI（可选未来扩展）
+
+若未来需要自动填 title/body（例如从 commit messages 摘要），可在 4.6.2 末尾加一段 opportunistic 探测：
+
+```bash
+if command -v gh >/dev/null 2>&1 && [[ "$WEB_URL" == *github.com* ]]; then
+  # Optional: 调用 gh pr create
+fi
+```
+
+当前 spec **不实现**此扩展（YAGNI）。
+
 ---
 
 ## 5. 数据流图
@@ -394,6 +472,9 @@ merge 后是否要再跑测试 + 失败如何回滚，因 source 形态不同而
 8. **source 脏工作树**：feature-A worktree 有未提交改动 → 子任务 finish → 暂停
 9. **测试失败回滚**：merge 后测试失败 → 自动 reset --hard HEAD~1
 10. **git 版本兼容**：模拟 git < 2.20 → 走文件 fallback
+11. **GitHub PR 路径**：origin 指向 `github.com/owner/repo.git` → 输出 `https://github.com/owner/repo/compare/<branch>?expand=1`
+12. **GitLab MR 路径**：origin 指向 `gitlab.com/group/repo.git` → 输出 `https://gitlab.com/group/repo/-/merge_requests/new?merge_request[source_branch]=<branch>`
+13. **未识别平台**：origin 指向 `bitbucket.org/...` 或自托管私域 → 提示用户手动创建 + 显示原始 URL，不阻塞
 
 ### 7.2 集成测试
 
@@ -426,20 +507,23 @@ rm -rf "$TMP"
 | Phase 2 | `finishing-a-development-branch` Step 3 改读元数据 + fallback | 向前兼容（fallback 处理老 worktree） |
 | Phase 3 | `finishing-a-development-branch` Step 4 auto 子流程重写 | 核心改动 |
 | Phase 4 | `references/source-resolution.md` 详细规则文档 | 新增文档 |
-| Phase 5 | `references/test-scenarios.md` + `evals/*.sh` 测试脚本 | 新增测试 |
-| Phase 6 | 4 个命令（feat/fix/refactor/init）Step 8 检查点描述同步 | 文档同步 |
+| Phase 5 | `references/pr-mr-creation.md` + 改造 interactive Option 2（去 `gh` 硬依赖） | 多平台支持（GitHub/GitLab） |
+| Phase 6 | `references/test-scenarios.md` + `evals/*.sh` 测试脚本 | 新增测试 |
+| Phase 7 | 4 个命令（feat/fix/refactor/init）Step 8 检查点描述同步 | 文档同步 |
 
 ---
 
 ## 9. 不做的事（YAGNI）
 
-- **不**改 interactive 模式（保留现有 4 选项菜单作为逃生口）
+- **不**改 interactive 模式的菜单选项（仍保留 4 选项；仅 Option 2 内部实现去 `gh`，对用户透明）
 - **不**改 push 时机为"批量"（用户答案是"修复冲突后 push"，每次 finish 都尝试 push 即可）
 - **不**支持"跨远程"合并（仅 origin）
 - **不**自动 rebase（避免重写历史，merge 更可控）
 - **不**修改 marketplace.json 或其他 plugin 元信息
 - **不**引入新的 variable（不增加 finish-mode 之外的配置项）
 - **不**自动 pull source branch（保持显式：push 失败时让用户处理）
+- **不**实现 PR/MR title/body 自动生成（用户在 Web UI 中填，跨平台一致）
+- **不**集成 `gh` / `glab` CLI（仅 push + URL，零外部依赖；4.6.4 留出未来扩展位）
 
 ---
 
@@ -450,9 +534,11 @@ rm -rf "$TMP"
 | git config --worktree 在 git < 2.20 不支持 | 已设计文件 fallback；在 SKILL.md 中注明 git 版本要求 |
 | 临时 worktree 路径泄漏（mktemp 失败） | trap EXIT 确保清理；失败时报错而非静默 |
 | 用户对"暂停等继续"指令理解不一致 | 在暂停消息中明确："请解决冲突后回复 '继续' 或 'continue'" |
-| 现有 4 个命令的 Step 8 检查点描述与新行为不一致 | Phase 6 同步更新："合并到源分支" 而非 "合并到初始分支" |
+| 现有 4 个命令的 Step 8 检查点描述与新行为不一致 | Phase 7 同步更新："合并到源分支" 而非 "合并到初始分支" |
 | 测试失败回滚（reset --hard HEAD~1）破坏 source worktree 已有工作 | 测试在 RUN_DIR 执行，仅 reset merge 提交；merge 前已校验 source worktree 干净 |
 | /init 首次提交无远程时 push 失败 | push only 路径需检测：若无远程则提示用户 `git remote add` |
+| 自托管 GitHub/GitLab（如 GitHub Enterprise、self-hosted GitLab）域名识别失败 | 4.6.2 的 case 分支用关键字模糊匹配；未知平台 fallback 到"请手动创建"提示 + 显示原始 remote URL |
+| 用户 origin 指向非 GitHub/GitLab 平台（Bitbucket、Gitea 等） | 4.6.2 fallback 提示用户手动创建；不阻塞 push |
 
 ---
 
@@ -466,6 +552,9 @@ rm -rf "$TMP"
 | A4 | 老 worktree（无元数据）finish 时有 fallback 提示 | 测试场景 5 |
 | A5 | /init 工作流 finish 不报错 | 测试场景 6 |
 | A6 | git < 2.20 仓库 finish 正常工作（走文件 fallback） | 测试场景 10 |
+| A7 | origin 为 GitHub 仓库时，PR 路径输出正确的 `/compare/<branch>?expand=1` URL | 新增测试场景 11 |
+| A8 | origin 为 GitLab 仓库时，MR 路径输出正确的 `/-/merge_requests/new?merge_request[source_branch]=<branch>` URL | 新增测试场景 12 |
+| A9 | origin 为未识别平台时，提示用户手动创建并显示原始 URL，不阻塞 push | 新增测试场景 13 |
 
 ---
 
