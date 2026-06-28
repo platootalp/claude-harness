@@ -12,18 +12,10 @@
 - **writing-plans: Task Right-Sizing + Global Constraints** — 同步上游新增章节
 
 ### Changed
-- **通用化格式** — 子代理调度从 `Task tool (general-purpose):` 改为 `Subagent (general-purpose):`；占位符从 `[X]` 改为 `{X}`；任务跟踪从 `TodoWrite` 改为通用 `todos`
+- **通用化格式** — 子代理调度从 `Task tool (general-purpose):` 改为 `Subagent (general-purpose):`；任务跟踪从 `TodoWrite` 改为通用 `todos`
 - **writing-skills: 术语更新** — `SDO` → `SDO`（Skill Discovery Optimization）、`agent` → `agent`（通用化用词）、`CLAUDE.md` → instructions file（多平台兼容）
 
 ### Removed
-- **executing-plans** — 不引入上游新增的 executing-plans skill
-- **writing-plans: executing-plans 选项** — 从 Execution Handoff 和 plan header 模板中移除 executing-plans 引用
-
-### Changed
-- **finishing-a-development-branch Step 3**："Determine Base Branch"（git merge-base 推断）→ "Determine Source Branch"（读 worktree 元数据）
-- **finishing-a-development-branch Step 4 auto**：移除所有 `cd $MAIN_ROOT && git checkout`；主仓库 HEAD 全程不变
-- **finishing-a-development-branch Interactive Option 2**：`gh pr create` → 通用 push + URL 输出
-- **commands (feat/fix/refactor)**：Step 8 检查点描述"合并到初始分支" → "合并到源分支"
 
 ## [0.10.0] - 2026-05-28
 

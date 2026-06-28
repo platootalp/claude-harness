@@ -1,76 +1,260 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup
+description: Use when implementation is complete and tests pass — guides completion of development work by executing merge, push, and cleanup, or presenting interactive options based on finish-mode variable
+variables: [finish-mode]
 ---
 
 # Finishing a Development Branch
 
 ## Overview
 
-Guide completion of development work by presenting clear options and handling chosen workflow.
+Complete development work by executing the finish workflow. Behavior controlled by `finish-mode` variable (defined in variables.json):
 
-**Core principle:** Verify tests → Detect environment → Present options → Execute choice → Clean up.
+- **auto** (default): Deterministic merge → test → push → cleanup → delete branch
+- **interactive**: Menu-based selection (merge locally / create PR / keep as-is / discard)
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
-## The Process
+## Variable Resolution
+
+`finish-mode` resolved by priority:
+1. User states preference in conversation ("用 interactive 模式")
+2. Command invocation specifies value (e.g. `调用 skill（finish-mode: auto）`)
+3. variables.json default (auto, injected by session-start hook)
+
+## Process
+
+```dot
+digraph finish {
+    rankdir=TB;
+    "1. Verify tests" [shape=box];
+    "2. Detect environment" [shape=box];
+    "3. Determine source branch" [shape=box];
+    "4. Execute finish" [shape=box];
+    "5. Cleanup workspace" [shape=box];
+
+    "1. Verify tests" -> "2. Detect environment";
+    "2. Detect environment" -> "3. Determine source branch";
+    "3. Determine source branch" -> "4. Execute finish";
+    "4. Execute finish" -> "5. Cleanup workspace";
+}
+```
 
 ### Step 1: Verify Tests
 
-**Before presenting options, verify tests pass:**
+**Before any finish action, verify tests pass:**
 
 ```bash
-# Run project's test suite
 npm test / cargo test / pytest / go test ./...
 ```
 
 **If tests fail:**
 ```
-Tests failing (<N> failures). Must fix before completing:
-
+Tests failing (<N> failures). Must fix before completing.
 [Show failures]
-
 Cannot proceed with merge/PR until tests pass.
 ```
 
 Stop. Don't proceed to Step 2.
 
-**If tests pass:** Continue to Step 2.
-
 ### Step 2: Detect Environment
-
-**Determine workspace state before presenting options:**
 
 ```bash
 GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
 GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
 ```
 
-This determines which menu to show and how cleanup works:
+| State | Implication |
+|-------|-------------|
+| `GIT_DIR == GIT_COMMON` | Normal repo — no worktree cleanup needed |
+| `GIT_DIR != GIT_COMMON`, named branch | Worktree — provenance-based cleanup applies |
+| `GIT_DIR != GIT_COMMON`, detached HEAD | Externally managed — no merge, no cleanup |
 
-| State | Menu | Cleanup |
-|-------|------|---------|
-| `GIT_DIR == GIT_COMMON` (normal repo) | Standard 4 options | No worktree to clean up |
-| `GIT_DIR != GIT_COMMON`, named branch | Standard 4 options | Provenance-based (see Step 6) |
-| `GIT_DIR != GIT_COMMON`, detached HEAD | Reduced 3 options (no merge) | No cleanup (externally managed) |
+### Step 3: Determine Source Branch
 
-### Step 3: Determine Base Branch
+读取 worktree 元数据，决定合并目标。**不依赖主仓库 HEAD**。
 
 ```bash
-# Try common base branches
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
+# 1. 优先读取 worktree-local config（git 2.20+）
+SOURCE=$(git config --worktree superpowers.sourceBranch 2>/dev/null)
+
+# 2. fallback 到文件
+if [ -z "$SOURCE" ]; then
+  SOURCE_FILE="$(git rev-parse --git-path superpowers-source)"
+  [ -f "$SOURCE_FILE" ] && SOURCE=$(cat "$SOURCE_FILE")
+fi
+
+# 3. 仍空 → 暂停询问用户（老 worktree / 手动 git worktree add）
+if [ -z "$SOURCE" ]; then
+  CANDIDATE=$(git merge-base HEAD main 2>/dev/null \
+              || git merge-base HEAD master 2>/dev/null \
+              || echo "未知")
+  echo "未找到此 worktree 的源分支元数据（可能是手动 git worktree add 创建）。"
+  echo "候选源分支推断：$CANDIDATE"
+  echo "请确认源分支名（或输入 'pr' 跳过本地 merge 走 PR/MR 路径）："
+  read SOURCE
+fi
 ```
 
-Or ask: "This branch split from main - is that correct?"
+**特殊值**：
+- `SOURCE = pr`：跳过 auto merge 子流程，转走 PR/MR 创建路径（见 `references/pr-mr-creation.md`）。
+- `SOURCE` 为空且非交互（无 stdin）：报错退出，提示用户手动 finish。
 
-### Step 4: Present Options
+详见 `references/source-resolution.md`。
 
-**Normal repo and named-branch worktree — present exactly these 4 options:**
+### Step 4: Execute Finish
+
+Branch on `finish-mode`:
+
+#### auto mode
+
+源分支感知的确定性流水线，**主仓库 HEAD 全程不变**。
+
+```bash
+SOURCE_BRANCH="$SOURCE"  # 来自 Step 3
+WT_BRANCH=$(git branch --show-current)
+WT_PATH=$(git rev-parse --show-toplevel)
+
+# === 特殊路径短路 ===
+
+# A. SOURCE == "pr" → 走 PR/MR 创建路径（见 references/pr-mr-creation.md）
+if [ "$SOURCE_BRANCH" = "pr" ]; then
+  # 跳到 PR/MR 创建路径，完成后保留 worktree
+  # 实现细节见 interactive Option 2 / references/pr-mr-creation.md
+  exit 0
+fi
+
+# B. /init 工作流（无源分支或源==当前分支）→ push only
+if [ "$WT_BRANCH" = "$SOURCE_BRANCH" ] || [ -z "$SOURCE_BRANCH" ]; then
+  git push -u origin "$WT_BRANCH"
+  # cleanup worktree (Step 5)
+  exit 0
+fi
+
+# C. worktree HEAD == source HEAD（无新提交，已合并）→ skip merge
+if [ "$(git rev-parse HEAD)" = "$(git rev-parse "$SOURCE_BRANCH" 2>/dev/null)" ]; then
+  echo "Worktree branch HEAD == source branch HEAD, nothing to merge. Skipping."
+  # 仍执行 cleanup（Step 5）
+  exit 0
+fi
+
+# === Source 形态检测 ===
+
+# 查找 source branch 是否在 active worktree 中
+# 注意：用 sub() 而非 $2，保留路径中的空格
+SOURCE_WT=$(git worktree list --porcelain | \
+  awk -v src="refs/heads/$SOURCE_BRANCH" '
+    /^worktree / { wt=$0; sub(/^worktree /, "", wt) }
+    /^branch / { if ($2 == src) print wt }
+  ')
+
+# SOURCE_WT 非空 → source 在某个 worktree 内 active
+# SOURCE_WT 空 → source 仅为 ref，无 active worktree
+
+# === Merge 路径决策 ===
+
+if [ -n "$SOURCE_WT" ]; then
+  # --- 2a: source 在 active worktree → cd 进去 merge ---
+
+  # 校验 source worktree 干净
+  if ! git -C "$SOURCE_WT" diff --quiet || ! git -C "$SOURCE_WT" diff --cached --quiet; then
+    echo "Source worktree at $SOURCE_WT has uncommitted changes."
+    echo "Please commit or stash them, then reply 'continue' to resume finish."
+    exit 1
+  fi
+
+  pushd "$SOURCE_WT" > /dev/null
+  if ! git merge --no-ff "$WT_BRANCH" -m "Merge $WT_BRANCH into $SOURCE_BRANCH"; then
+    echo "Merge conflict detected. Conflicted files:"
+    git diff --name-only --diff-filter=U
+    echo "Please resolve conflicts and commit, then reply 'continue' to resume finish."
+    popd > /dev/null
+    exit 1
+  fi
+  RUN_DIR="$SOURCE_WT"
+  popd > /dev/null
+
+elif git fetch . "$WT_BRANCH:$SOURCE_BRANCH" 2>/dev/null; then
+  # --- 2b: source 仅 ref + worktree 已 fast-forward source → 直接更新 ref ---
+  echo "Fast-forwarded $SOURCE_BRANCH to $WT_BRANCH HEAD"
+  RUN_DIR="$WT_PATH"  # 当前 worktree 即为 ff 后等价代码
+  SKIP_MERGE_TEST=true  # ff 等同已验证，无需 merge 后测试
+
+else
+  # --- 2c: source 仅 ref + 非 ff → 临时 worktree 处理 ---
+  # 用 mktemp -d 生成空目录（git worktree add 接受空目录）+ trap 兜底 cleanup
+  TMP_WT=$(mktemp -d -t superpowers-merge-XXXXXX)
+  trap "git worktree remove --force '$TMP_WT' 2>/dev/null; rm -rf '$TMP_WT'" EXIT
+
+  git worktree add "$TMP_WT" "$SOURCE_BRANCH"
+  pushd "$TMP_WT" > /dev/null
+  if ! git merge --no-ff "$WT_BRANCH" -m "Merge $WT_BRANCH into $SOURCE_BRANCH"; then
+    echo "Merge conflict in temporary worktree at $TMP_WT."
+    echo "This is rare (non-ff with no active source worktree)."
+    echo "Please cd to $TMP_WT to resolve, then reply 'continue' to resume finish."
+    # 关键：解除 EXIT trap，保留 $TMP_WT 供用户解决冲突（否则 exit 1 触发 trap 会摧毁工作）
+    trap - EXIT
+    popd > /dev/null
+    exit 1
+  fi
+  RUN_DIR="$TMP_WT"
+  popd > /dev/null
+fi
+
+# === 运行测试（merge 结果）===
+if [ "${SKIP_MERGE_TEST:-false}" != "true" ]; then
+  pushd "$RUN_DIR" > /dev/null
+  # === 替换 <run_test_command> 为项目实际测试命令 ===
+  # 示例：npm test / cargo test / pytest / go test ./...
+  # 重要：必须是可执行命令，不能是注释（否则 $? 会捕获 pushd 而非测试结果）
+  <run_test_command>
+  TEST_EXIT=$?
+  popd > /dev/null
+
+  if [ $TEST_EXIT -ne 0 ]; then
+    echo "Tests failed after merge. Rolling back merge commit."
+    (cd "$RUN_DIR" && git reset --hard HEAD~1)
+    # 2c 情况下，trap 会清理临时 worktree
+    exit 1
+  fi
+fi
+
+# === Push 远程 source branch ===
+pushd "$RUN_DIR" > /dev/null
+if ! git push origin "$SOURCE_BRANCH"; then
+  echo "Push rejected (likely non-ff: origin/$SOURCE_BRANCH has new commits)."
+  echo "Please pull and resolve in $RUN_DIR, then reply 'continue' to resume finish."
+  popd > /dev/null
+  exit 1
+fi
+popd > /dev/null
+
+# === 清理临时 worktree（仅 2c）===
+if [ -n "${TMP_WT:-}" ] && [ -d "$TMP_WT" ]; then
+  git worktree remove "$TMP_WT"
+  trap - EXIT
+fi
+
+# === 清理当前 worktree（Step 5 既有逻辑）+ 删除分支 ===
+```
+
+**关键不变量**：
+- 全流程**不执行** `cd $MAIN_ROOT && git checkout`
+- 冲突 / push 失败时退出，等待用户回复 "continue" 后再调用 skill 续跑
+- 2b（fast-forward）跳过 merge 后测试，因为代码组合与 worktree 已完全等价
+
+测试与回滚位置详见 `references/source-resolution.md` 第 5 节。
+
+#### interactive mode
+
+Present menu based on environment:
+
+**Named branch worktree or normal repo — 4 options:**
 
 ```
 Implementation complete. What would you like to do?
 
-1. Merge back to <base-branch> locally
+1. Merge back to <source-branch> locally
 2. Push and create a Pull Request
 3. Keep the branch as-is (I'll handle it later)
 4. Discard this work
@@ -78,7 +262,7 @@ Implementation complete. What would you like to do?
 Which option?
 ```
 
-**Detached HEAD — present exactly these 3 options:**
+**Detached HEAD — 3 options:**
 
 ```
 Implementation complete. You're on a detached HEAD (externally managed workspace).
@@ -90,51 +274,59 @@ Implementation complete. You're on a detached HEAD (externally managed workspace
 Which option?
 ```
 
-**Don't add explanation** - keep options concise.
+Execute per option:
 
-### Step 5: Execute Choice
-
-#### Option 1: Merge Locally
-
+**Option 1: Merge Locally**
 ```bash
-# Get main repo root for CWD safety
 MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)
 cd "$MAIN_ROOT"
-
-# Merge first — verify success before removing anything
-git checkout <base-branch>
+git checkout <source-branch>
 git pull
 git merge <feature-branch>
-
-# Verify tests on merged result
 <test command>
-
-# Only after merge succeeds: cleanup worktree (Step 6), then delete branch
 ```
+Then: Cleanup (Step 5), delete branch: `git branch -d <feature-branch>`
 
-Then: Cleanup worktree (Step 6), then delete branch:
+**Option 2: Push and Create PR/MR**
+
+通用方案，不依赖 `gh` / `glab` CLI。详见 `references/pr-mr-creation.md`。
 
 ```bash
-git branch -d <feature-branch>
+git push -u origin "$WT_BRANCH"
+
+REMOTE_URL=$(git remote get-url origin)
+WEB_URL=$(echo "$REMOTE_URL" | sed -E 's#^git@([^:]+):#https://\1/#; s#\.git$##;')
+
+case "$WEB_URL" in
+  *github.com*|*github*)
+    CREATE_URL="${WEB_URL}/compare/${WT_BRANCH}?expand=1"
+    PLATFORM="GitHub Pull Request"
+    ;;
+  *gitlab*)
+    CREATE_URL="${WEB_URL}/-/merge_requests/new?merge_request[source_branch]=${WT_BRANCH}"
+    PLATFORM="GitLab Merge Request"
+    ;;
+  *)
+    CREATE_URL=""
+    PLATFORM="未识别平台"
+    ;;
+esac
+
+echo "Branch pushed: $WT_BRANCH"
+if [ -n "$CREATE_URL" ]; then
+  echo "Create $PLATFORM at: $CREATE_URL"
+else
+  echo "Detected non-GitHub/GitLab remote. Please create PR/MR manually."
+  echo "Remote URL: $REMOTE_URL"
+fi
 ```
+**Do NOT cleanup worktree** — user needs it for PR/MR iteration.
 
-#### Option 2: Push and Create PR
-
-```bash
-# Push branch
-git push -u origin <feature-branch>
-```
-
-**Do NOT clean up worktree** — user needs it alive to iterate on PR feedback.
-
-#### Option 3: Keep As-Is
-
+**Option 3: Keep As-Is**
 Report: "Keeping branch <name>. Worktree preserved at <path>."
+**Don't cleanup.**
 
-**Don't cleanup worktree.**
-
-#### Option 4: Discard
-
+**Option 4: Discard**
 **Confirm first:**
 ```
 This will permanently delete:
@@ -144,23 +336,11 @@ This will permanently delete:
 
 Type 'discard' to confirm.
 ```
+Wait for exact "discard". Then: Cleanup (Step 5), force-delete: `git branch -D <feature-branch>`
 
-Wait for exact confirmation.
+### Step 5: Cleanup Workspace
 
-If confirmed:
-```bash
-MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)
-cd "$MAIN_ROOT"
-```
-
-Then: Cleanup worktree (Step 6), then force-delete branch:
-```bash
-git branch -D <feature-branch>
-```
-
-### Step 6: Cleanup Workspace
-
-**Only runs for Options 1 and 4.** Options 2 and 3 always preserve the worktree.
+**Only runs for auto mode, or interactive Option 1 / Option 4.**
 
 ```bash
 GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
@@ -170,72 +350,35 @@ WORKTREE_PATH=$(git rev-parse --show-toplevel)
 
 **If `GIT_DIR == GIT_COMMON`:** Normal repo, no worktree to clean up. Done.
 
-**If worktree path is under `.worktrees/` or `worktrees/`:** Superpowers created this worktree — we own cleanup.
+**If worktree under `.worktrees/`, `worktrees/`, or `~/.config/superpowers-pro/worktrees/`:** Superpowers-Pro owns it.
 
 ```bash
 MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)
 cd "$MAIN_ROOT"
 git worktree remove "$WORKTREE_PATH"
-git worktree prune  # Self-healing: clean up any stale registrations
+git worktree prune
 ```
 
-**Otherwise:** The host environment (harness) owns this workspace. Do NOT remove it. If your platform provides a workspace-exit tool, use it. Otherwise, leave the workspace in place.
+**Otherwise:** Host environment owns the workspace. Do NOT remove. Use platform's workspace-exit tool if available.
 
 ## Quick Reference
 
-| Option | Merge | Push | Keep Worktree | Cleanup Branch |
-|--------|-------|------|---------------|----------------|
-| 1. Merge locally | yes | - | - | yes |
-| 2. Create PR | - | yes | yes | - |
-| 3. Keep as-is | - | - | yes | - |
-| 4. Discard | - | - | - | yes (force) |
+| Mode | Merge | Push | Keep Worktree | Cleanup Branch |
+|------|-------|------|---------------|----------------|
+| auto | yes | yes | no | yes |
+| interactive 1 | yes | — | no | yes |
+| interactive 2 | — | yes | yes | no |
+| interactive 3 | — | — | yes | no |
+| interactive 4 | — | — | no | yes (force) |
 
 ## Common Mistakes
 
-**Skipping test verification**
-- **Problem:** Merge broken code, create failing PR
-- **Fix:** Always verify tests before offering options
-
-**Open-ended questions**
-- **Problem:** "What should I do next?" is ambiguous
-- **Fix:** Present exactly 4 structured options (or 3 for detached HEAD)
-
-**Cleaning up worktree for Option 2**
-- **Problem:** Remove worktree user needs for PR iteration
-- **Fix:** Only cleanup for Options 1 and 4
-
-**Deleting branch before removing worktree**
-- **Problem:** `git branch -d` fails because worktree still references the branch
-- **Fix:** Merge first, remove worktree, then delete branch
-
-**Running git worktree remove from inside the worktree**
-- **Problem:** Command fails silently when CWD is inside the worktree being removed
-- **Fix:** Always `cd` to main repo root before `git worktree remove`
-
-**Cleaning up harness-owned worktrees**
-- **Problem:** Removing a worktree the harness created causes phantom state
-- **Fix:** Only clean up worktrees under `.worktrees/` or `worktrees/`
-
-**No confirmation for discard**
-- **Problem:** Accidentally delete work
-- **Fix:** Require typed "discard" confirmation
-
-## Red Flags
-
-**Never:**
-- Proceed with failing tests
-- Merge without verifying tests on result
-- Delete work without confirmation
-- Force-push without explicit request
-- Remove a worktree before confirming merge success
-- Clean up worktrees you didn't create (provenance check)
-- Run `git worktree remove` from inside the worktree
-
-**Always:**
-- Verify tests before offering options
-- Detect environment before presenting menu
-- Present exactly 4 options (or 3 for detached HEAD)
-- Get typed confirmation for Option 4
-- Clean up worktree for Options 1 & 4 only
-- `cd` to main repo root before worktree removal
-- Run `git worktree prune` after removal
+| Mistake | Fix |
+|---------|-----|
+| Proceeding with failing tests | Always verify tests first. Stop if they fail. |
+| Merging without verifying tests on result | Run tests after merge, rollback if they fail. |
+| Cleaning up worktree for interactive Option 2/3 | Only cleanup for auto mode and interactive 1/4. |
+| Deleting branch before removing worktree | Remove worktree first, then delete branch. |
+| Running git worktree remove from inside the worktree | Always cd to main repo root first. |
+| Cleaning up harness-owned worktrees | Only clean up provenance directories. |
+| No confirmation for interactive Option 4 | Require typed "discard" confirmation. |
