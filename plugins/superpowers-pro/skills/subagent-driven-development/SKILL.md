@@ -335,7 +335,7 @@ Done!
 - Parallel-safe (subagents don't interfere)
 - Subagent can ask questions (before AND during work)
 
-**vs. Executing Plans:**
+**Advantages:**
 - Same session (no handoff)
 - Continuous progress (no waiting)
 - Review checkpoints automatic
